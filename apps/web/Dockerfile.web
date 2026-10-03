@@ -120,6 +120,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -fsS http://127.0.0.1:3000/ >/dev/null || exit 1
 
 COPY --from=installer /app/apps/web/build/client /usr/share/caddy/html
+COPY --from=installer /app/apps/web/build/caddy-assets.caddy /etc/caddy/caddy-assets.caddy
 
 EXPOSE 3000
 

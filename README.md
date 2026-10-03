@@ -192,6 +192,51 @@ with a production Plane 1.4.2 stack. Actual Actions execution, registry
 authentication, build/push, and deployment require separate operator action;
 local workflow validation does not prove those outcomes.
 
+### Web static serving
+
+The web image keeps three independent 300-request/minute budgets: documents
+share one budget per client IP; existing non-HTML static files have one budget
+per client IP and cleaned filesystem-relative path (query strings do not create
+new budgets); missing asset/code paths and methods other than GET/HEAD share
+one error budget. Exhaustion returns 429. Missing assets return 404 rather than
+SPA HTML; unsupported methods return 405. Dotted application slugs still use
+the SPA fallback. HTML documents always use the document budget.
+
+This bounds repeated-file abuse, **not aggregate bandwidth or DDoS load**:
+requesting F distinct files allows up to 300F asset requests per client per
+minute. Clients sharing an IP also share budgets; shared-NAT capacity has not
+been established. API/authentication and proxy/client-IP trust are unchanged.
+
+The client Vite build writes `build/caddy-assets.caddy` outside `build/client`.
+The image must copy this artifact and Caddy must import it; a missing artifact
+is an error, not a cache-policy fallback. The immutable allowlist covers proven
+client JS chunks only; CSS/fonts/images revalidate because their current bundler
+metadata does not prove hash provenance. Eligible chunks require both a `[hash]`
+naming contract and `preliminaryFileName` evidence of bundler hash substitution,
+and receive one-year immutable caching on successful responses. HTML, public
+copies (including hash-looking workbox filenames), service workers and unknown
+outputs also revalidate with `Cache-Control: no-cache`. This conservative policy
+does not infer hash provenance from filenames. Error responses do not receive
+immutable caching.
+
+Run the build-plugin checks with
+`pnpm --filter web exec vitest run --config caddy/vitest.config.ts`.
+For isolated Caddy verification, `WEB_LISTEN`, `WEB_ROOT` and `WEB_ASSET_SNIPPET`
+override defaults `:3000`, `/usr/share/caddy/html` and
+`/etc/caddy/caddy-assets.caddy`. These checks do not replace a production-build
+cold load, reload, deep-link and lazy-navigation browser check.
+
+Local verification (2026-10-03): the production bundle loaded in Chromium with
+cache/service-worker bypass: 357 JS chunks on cold load, 349 on reload, six new
+lazy chunks, and 359 on a work-item deep link; all four phases had zero 429s.
+The complete 1,326-file asset graph, independent quota exhaustion/recovery,
+canonical/query aliases, missing assets and cache status boundaries passed.
+This evidence uses native Caddy 2.11.6 with ratelimit 0.1.0, not the Docker
+recipe's 2.11.4 image; Docker, production proxy/TLS and shared-NAT behavior remain
+unverified. The UI rendered, but React hydration error #418 was observed and is
+not resolved by this serving change. No production requests or deployment were
+part of this verification.
+
 ## ❤️ Community
 
 Join the Plane community on [GitHub Discussions](https://github.com/orgs/makeplane/discussions) and our [Forum](https://forum.plane.so). We follow a [Code of conduct](https://github.com/makeplane/plane/blob/master/CODE_OF_CONDUCT.md) in all our community channels.

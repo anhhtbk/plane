@@ -6,17 +6,8 @@
 	order rate_limit before file_server
 }
 
-:3000 {
-	root * /usr/share/caddy/html
-
-	# Per-client-IP rate limiting for static asset requests
-	rate_limit {
-		zone static {
-			key {client_ip}
-			events 300
-			window 1m
-		}
-	}
+{$WEB_LISTEN::3000} {
+	root * {$WEB_ROOT:/usr/share/caddy/html}
 
 	# Security headers (HSTS is set at the TLS terminator)
 	header {
@@ -25,9 +16,72 @@
 		X-XSS-Protection "1; mode=block"
 	}
 
-	# SPA fallback
-	try_files {path} /index.html
-	file_server
+	# Mutable files and documents must revalidate; errors must never be immutable.
+	header Cache-Control "no-cache"
+
+	route {
+		# Probe only the requested path, before any SPA rewrite. No index fallback.
+		@existing file {
+			try_files {path}
+		}
+		vars @existing file_type {http.matchers.file.type}
+
+		# Missing code/public assets are not SPA routes. Dotted slugs still are.
+		@error expression <<CEL
+			!method('GET', 'HEAD') ||
+			({vars.file_type} != 'file' &&
+				(path('/assets', '/assets/*', '/icons', '/icons/*', '/favicon', '/favicon/*',
+					'/favicon.ico', '/favicon.ico/', '/manifest.json', '/manifest.json/',
+					'/site.webmanifest', '/site.webmanifest/', '/site.webmanifest.json', '/site.webmanifest.json/') ||
+				path_regexp('(?i)[.](js|mjs|cjs|css|map|wasm)/*$')))
+			CEL
+		handle @error {
+			route {
+				rate_limit {
+					zone errors {
+						key {client_ip}
+						events 300
+						window 1m
+					}
+				}
+				@invalid_method not method GET HEAD
+				header @invalid_method Allow "GET, HEAD"
+				respond @invalid_method 405
+				respond 404
+			}
+		}
+
+		# Use the successful file match, not an untrusted URL, as the quota key.
+		# HTML aliases must share the document quota, even under /assets.
+		@asset expression `{vars.file_type} == 'file' && !{http.matchers.file.relative}.matches('(?i)[.](html?|xhtml)$')`
+		handle @asset {
+			route {
+				rate_limit {
+					zone assets {
+						key "{client_ip}|{http.matchers.file.relative}"
+						events 300
+						window 1m
+					}
+				}
+				import {$WEB_ASSET_SNIPPET:/etc/caddy/caddy-assets.caddy}
+				file_server
+			}
+		}
+
+		handle {
+			route {
+				rate_limit {
+					zone documents {
+						key {client_ip}
+						events 300
+						window 1m
+					}
+				}
+				try_files {path} /index.html
+				file_server
+			}
+		}
+	}
 
 	# Access logs to stdout (default in Caddy)
 	log {

@@ -49,6 +49,7 @@ Getting started with Plane is simple. Choose the setup that works best for you:
 
 - **Work Items**
   Efficiently create and manage tasks with a robust rich text editor that supports file uploads. Enhance organization and tracking by adding sub-properties and referencing related issues.
+  In a project's Work Items filter menu, choose **Title** to match a case-insensitive substring of the work item name (not its description or ID). Type a value and press Enter or leave the input to apply it; Escape discards an uncommitted edit. Surrounding whitespace is trimmed, and committing an empty value or using the chip's remove button removes the condition. Title combines with the existing filters using AND and is retained by project filter persistence and **Save view**.
 
 - **Cycles**
   Maintain your team’s momentum with Cycles. Track progress effortlessly using burn-down charts and other insightful tools.
@@ -68,6 +69,19 @@ Getting started with Plane is simple. Choose the setup that works best for you:
 ## 🛠️ Local development
 
 See [CONTRIBUTING](./CONTRIBUTING.md)
+
+Title-filter regression checks:
+
+```sh
+pnpm turbo run build --filter=@plane/shared-state...
+pnpm --filter @plane/shared-state test
+pnpm --filter web test
+docker compose -f docker-compose-test.yml run --rm api-tests \
+  pytest plane/tests/unit/utils/test_issue_title_filters.py \
+  plane/tests/unit/utils/test_issue_datetime_filters.py -q
+```
+
+The rich-filter payload uses `{"name__icontains":"login"}` or that condition inside the existing `and` group. Project lists refetch from the API; no separate client-side title matcher or search endpoint is used.
 
 ## ⚙️ Built with
 
@@ -126,6 +140,57 @@ See [CONTRIBUTING](./CONTRIBUTING.md)
 ## 📝 Documentation
 
 Explore Plane's [product documentation](https://docs.plane.so/) and [developer documentation](https://developers.plane.so/) to learn about features, setup, and usage.
+
+### Private registry image builds
+
+[`Build Private Registry Images`](.github/workflows/build-private-registry-images.yml)
+is a separate, manual-only workflow. It builds only these two application images
+on an Ubuntu x64 runner for `linux/amd64`, from the same dispatched commit:
+
+- `docker.pmr.vn/msc/plane/plane-frontend:sha-<full-commit-sha>` — root build
+  context, `apps/web/Dockerfile.web`, with the Dockerfile's same-origin VITE defaults.
+- `docker.pmr.vn/msc/plane/plane-backend:sha-<full-commit-sha>` — `apps/api` context,
+  `apps/api/Dockerfile.api`.
+
+A repository administrator must configure these **repository Actions secrets**
+under **Settings → Secrets and variables → Actions**:
+
+| Secret                      | Value                                                                 |
+| --------------------------- | --------------------------------------------------------------------- |
+| `PRIVATE_REGISTRY_USERNAME` | Registry account with access to `msc/plane`.                          |
+| `PRIVATE_REGISTRY_TOKEN`    | Password/token with pull and push rights for both image repositories. |
+
+These follow the existing username/token convention but are separate from
+`DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`; never put credentials in source, workflow
+inputs, or build arguments. The registry must be reachable over HTTPS with a
+publicly trusted certificate from GitHub-hosted runners, and its administrator
+must provision the namespace/repositories and private visibility as required.
+The workflow cannot configure registry visibility or network access.
+
+After an authorized push/merge, the workflow file must be present on the
+repository's **default branch** for `workflow_dispatch` to be available. In
+**Actions → Build Private Registry Images → Run workflow**, choose a trusted
+branch containing this workflow and the intended source changes, then run it.
+Both builds explicitly check out that run's `github.sha`, not a branch that can
+move between builds. Do not dispatch untrusted branches: their workflow and
+Dockerfiles execute with registry credentials. There are no PR/push triggers,
+deployment steps, or GitHub write permissions in this workflow.
+
+The run summary reports each build/push outcome, SHA tag, and successful
+`repo@sha256:…` digest pin; the build job also exposes tags and digests as outputs.
+A frontend failure skips the backend; a backend failure does not undo the
+frontend push. Failed/cancelled pushes may have uploaded data, and abrupt runner
+termination can prevent the summary. Publishing both images is not atomic.
+Reruns reuse SHA tags and may replace them (or fail under an immutable-tag policy);
+base images/dependencies can change even for the same source SHA. Pin deployments
+by successful digest, not by assuming a SHA tag is immutable. No `latest` tag,
+other application image, release, or deployment is published. Existing upstream
+build/deployment workflows are unchanged and retain their own triggers.
+
+Building these two images does not establish application health or compatibility
+with a production Plane 1.4.2 stack. Actual Actions execution, registry
+authentication, build/push, and deployment require separate operator action;
+local workflow validation does not prove those outcomes.
 
 ## ❤️ Community
 

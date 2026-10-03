@@ -1,0 +1,118 @@
+name: Build Private Registry Images
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize this workflow's publishes for a source revision; do not interrupt a push.
+concurrency:
+  group: private-registry-images-${{ github.sha }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: docker.pmr.vn
+  IMAGE_PREFIX: docker.pmr.vn/msc/plane
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
+
+jobs:
+  build:
+    name: Build frontend and backend (linux/amd64)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    outputs:
+      source_sha: ${{ steps.images.outputs.source_sha }}
+      frontend_tag: ${{ steps.images.outputs.frontend_tag }}
+      backend_tag: ${{ steps.images.outputs.backend_tag }}
+      frontend_digest: ${{ steps.frontend.outputs.digest }}
+      backend_digest: ${{ steps.backend.outputs.digest }}
+    steps:
+      - name: Check registry credentials are configured
+        env:
+          REGISTRY_USERNAME: ${{ secrets.PRIVATE_REGISTRY_USERNAME }}
+          REGISTRY_TOKEN: ${{ secrets.PRIVATE_REGISTRY_TOKEN }}
+        run: |
+          if [[ -z "$REGISTRY_USERNAME" || -z "$REGISTRY_TOKEN" ]]; then
+            echo '::error::Configure PRIVATE_REGISTRY_USERNAME and PRIVATE_REGISTRY_TOKEN repository Actions secrets.'
+            exit 1
+          fi
+
+      - name: Check out the exact dispatched source commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Define image references
+        id: images
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          {
+            printf 'source_sha=%s\n' "$GITHUB_SHA"
+            printf 'frontend_tag=%s/plane-frontend:sha-%s\n' "$IMAGE_PREFIX" "$GITHUB_SHA"
+            printf 'backend_tag=%s/plane-backend:sha-%s\n' "$IMAGE_PREFIX" "$GITHUB_SHA"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver: docker-container
+
+      - name: Log in to the private registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.PRIVATE_REGISTRY_USERNAME }}
+          password: ${{ secrets.PRIVATE_REGISTRY_TOKEN }}
+
+      - name: Build and push frontend
+        id: frontend
+        uses: docker/build-push-action@v7.0.0
+        with:
+          context: .
+          file: ./apps/web/Dockerfile.web
+          platforms: linux/amd64
+          tags: ${{ steps.images.outputs.frontend_tag }}
+          push: true
+
+      - name: Build and push backend
+        id: backend
+        uses: docker/build-push-action@v7.0.0
+        with:
+          context: ./apps/api
+          file: ./apps/api/Dockerfile.api
+          platforms: linux/amd64
+          tags: ${{ steps.images.outputs.backend_tag }}
+          push: true
+
+      - name: Report image digests and partial results
+        if: always()
+        env:
+          FRONTEND_TAG: ${{ steps.images.outputs.frontend_tag }}
+          BACKEND_TAG: ${{ steps.images.outputs.backend_tag }}
+          FRONTEND_DIGEST: ${{ steps.frontend.outputs.digest }}
+          BACKEND_DIGEST: ${{ steps.backend.outputs.digest }}
+          FRONTEND_OUTCOME: ${{ steps.frontend.outcome }}
+          BACKEND_OUTCOME: ${{ steps.backend.outcome }}
+        run: |
+          {
+            printf "## Private registry images\n\nSource commit: \`%s\`\n\n" "$GITHUB_SHA"
+            printf '| Image | Build/push outcome | Tag | Digest pin |\n'
+            printf '| --- | --- | --- | --- |\n'
+            for image in frontend backend; do
+              if [[ "$image" == frontend ]]; then
+                tag="$FRONTEND_TAG"; digest="$FRONTEND_DIGEST"; outcome="$FRONTEND_OUTCOME"
+              else
+                tag="$BACKEND_TAG"; digest="$BACKEND_DIGEST"; outcome="$BACKEND_OUTCOME"
+              fi
+              pin='unavailable'
+              if [[ "$outcome" == success && "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+                pin="$IMAGE_PREFIX/plane-$image@$digest"
+              fi
+              printf "| %s | %s | \`%s\` | \`%s\` |\n" "$image" "${outcome:-not attempted}" "${tag:-unavailable}" "$pin"
+            done
+            printf '\nPushes are not atomic. A failed/cancelled push may have uploaded remote data; nothing is rolled back.\n'
+            printf 'SHA tags may be replaced on rerun; pin successful outputs by digest. No deployment or application verification was performed.\n'
+          } >> "$GITHUB_STEP_SUMMARY"

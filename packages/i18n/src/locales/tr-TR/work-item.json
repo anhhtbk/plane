@@ -23,7 +23,8 @@
       "dependency": "Bağımlılık ekle",
       "relation": "İlişki ekle",
       "link": "Bağlantı ekle",
-      "existing": "Varolan iş öğesi ekle"
+      "existing": "Varolan iş öğesi ekle",
+      "with_filters": "Filtrelerle ekle"
     },
     "remove": {
       "label": "İş öğesini kaldır",

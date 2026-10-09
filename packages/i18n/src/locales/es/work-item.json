@@ -23,7 +23,8 @@
       "dependency": "Agregar dependencia",
       "relation": "Agregar relación",
       "link": "Agregar enlace",
-      "existing": "Agregar elemento de trabajo existente"
+      "existing": "Agregar elemento de trabajo existente",
+      "with_filters": "Agregar con filtros"
     },
     "remove": {
       "label": "Eliminar elemento de trabajo",

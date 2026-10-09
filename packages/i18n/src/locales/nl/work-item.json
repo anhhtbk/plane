@@ -23,7 +23,8 @@
       "dependency": "Afhankelijkheid toevoegen",
       "relation": "Relatie toevoegen",
       "link": "Koppeling toevoegen",
-      "existing": "Bestaand werkitem toevoegen"
+      "existing": "Bestaand werkitem toevoegen",
+      "with_filters": "Toevoegen met filters"
     },
     "remove": {
       "label": "Werkitem verwijderen",

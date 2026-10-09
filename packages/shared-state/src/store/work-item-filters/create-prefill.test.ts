@@ -135,6 +135,27 @@ describe("getWorkItemCreatePrefill", () => {
     expect(prefill({})).toEqual({});
   });
 
+  describe("title", () => {
+    it("prefills the title with the filtered text, trimmed, so a title-only filter has a prefill", () => {
+      expect(prefill({ name__icontains: "  Login, SSO & 50%_done " })).toEqual({ name: "Login, SSO & 50%_done" });
+    });
+
+    it("keeps the title alongside the other prefilled fields", () => {
+      expect(prefill({ and: [{ name__icontains: "login" }, { assignee_id__in: "user-ann" }] })).toEqual({
+        name: "login",
+        assignee_ids: ["user-ann"],
+      });
+    });
+
+    it("does not prefill a title filtered only by whitespace", () => {
+      expect(prefill({ name__icontains: "   " })).toEqual({});
+    });
+
+    it("does not guess a title when several title conditions are filtered", () => {
+      expect(prefill({ and: [{ name__icontains: "login" }, { name__icontains: "payment" }] })).toEqual({});
+    });
+  });
+
   describe("state group", () => {
     it("uses the project default state when it belongs to the only filtered group", () => {
       expect(prefill({ state_group__in: "unstarted" })).toEqual({ state_id: "todo-1" });

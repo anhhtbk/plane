@@ -5,6 +5,7 @@
  */
 
 // plane imports
+import { STATE_GROUPS } from "@plane/constants";
 import type {
   TFilterConditionNode,
   TFilterValue,
@@ -112,6 +113,27 @@ const getSingleValue = <T extends string>(
 };
 
 /**
+ * State for a work item filtered to exactly one state group: the project default state if it is in
+ * that group, otherwise the group's lowest-sequence state. None when the group has no state.
+ */
+const getStateIdFromGroup = (
+  conditions: readonly TPrefillCondition[],
+  states: readonly TWorkItemCreatePrefillState[]
+): string | undefined => {
+  const group = getSingleValue(conditions, "state_group", (value): value is TStateGroups =>
+    Object.keys(STATE_GROUPS).includes(value)
+  );
+  if (!group) return undefined;
+  const groupStates = states.filter((state) => state.group === group);
+  const defaultState = groupStates.find((state) => state.default);
+  if (defaultState) return defaultState.id;
+  return groupStates.reduce<TWorkItemCreatePrefillState | undefined>(
+    (first, state) => (!first || state.sequence < first.sequence ? state : first),
+    undefined
+  )?.id;
+};
+
+/**
  * Builds the create work item prefill from the active filter conditions of a project work item list.
  * @param conditions - active filter conditions (the filter instance's `allConditions`)
  * @param context - project data used to validate filter values
@@ -132,9 +154,10 @@ export const getWorkItemCreatePrefill = (
   const moduleIds = getMultiValue(conditions, "module_id", context.validModuleIds);
   if (moduleIds) prefill.module_ids = moduleIds;
 
-  const stateId = getSingleValue(conditions, "state_id", (id): id is string =>
-    context.states.some((state) => state.id === id)
-  );
+  // a usable state filter decides; the state group is used only without one
+  const stateId =
+    getSingleValue(conditions, "state_id", (id): id is string => context.states.some((state) => state.id === id)) ??
+    getStateIdFromGroup(conditions, context.states);
   if (stateId) prefill.state_id = stateId;
 
   const priority = getSingleValue(

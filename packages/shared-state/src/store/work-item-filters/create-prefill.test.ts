@@ -14,8 +14,10 @@ import { getWorkItemCreatePrefill } from "./create-prefill";
 const context: TWorkItemCreatePrefillContext = {
   states: [
     { id: "backlog-1", group: "backlog", sequence: 1000, default: false },
+    { id: "todo-0", group: "unstarted", sequence: 1500, default: false },
     { id: "todo-1", group: "unstarted", sequence: 2000, default: true },
     { id: "doing-1", group: "started", sequence: 3000, default: false },
+    { id: "doing-2", group: "started", sequence: 2500, default: false },
     { id: "done-1", group: "completed", sequence: 4000, default: false },
   ],
   validCycleIds: ["cycle-current", "cycle-upcoming"],
@@ -131,5 +133,41 @@ describe("getWorkItemCreatePrefill", () => {
 
   it("returns an empty prefill when no filter is applied", () => {
     expect(prefill({})).toEqual({});
+  });
+
+  describe("state group", () => {
+    it("uses the project default state when it belongs to the only filtered group", () => {
+      expect(prefill({ state_group__in: "unstarted" })).toEqual({ state_id: "todo-1" });
+    });
+
+    it("uses the lowest-sequence state of the group when the default state is in another group", () => {
+      expect(prefill({ state_group__exact: "started" })).toEqual({ state_id: "doing-2" });
+    });
+
+    it("uses the one group left after intersecting repeated group conditions", () => {
+      expect(prefill({ and: [{ state_group__in: "started,completed" }, { state_group__in: "started" }] })).toEqual({
+        state_id: "doing-2",
+      });
+    });
+
+    it("leaves state to the form default when several groups are filtered", () => {
+      expect(prefill({ state_group__in: "backlog,started" })).toEqual({});
+    });
+
+    it("leaves state to the form default when the filtered group has no state in the project", () => {
+      expect(prefill({ state_group__in: "cancelled" })).toEqual({});
+    });
+
+    it("lets a usable state filter decide over the group", () => {
+      expect(prefill({ and: [{ state_group__in: "unstarted" }, { state_id__in: "doing-1" }] })).toEqual({
+        state_id: "doing-1",
+      });
+    });
+
+    it("falls back to the group when the state filter has no usable value", () => {
+      expect(prefill({ and: [{ state_group__in: "started" }, { state_id__in: "state-deleted" }] })).toEqual({
+        state_id: "doing-2",
+      });
+    });
   });
 });

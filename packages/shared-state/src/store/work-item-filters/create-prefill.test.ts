@@ -164,6 +164,16 @@ describe("getWorkItemCreatePrefill", () => {
       });
     });
 
+    it("does not use the group when the usable state filter keeps several states", () => {
+      expect(prefill({ and: [{ state_group__in: "started" }, { state_id__in: "todo-1,doing-1" }] })).toEqual({});
+    });
+
+    it("does not use the group when usable state conditions share no state", () => {
+      expect(
+        prefill({ and: [{ state_group__in: "started" }, { state_id__in: "todo-1" }, { state_id__in: "doing-1" }] })
+      ).toEqual({});
+    });
+
     it("falls back to the group when the state filter has no usable value", () => {
       expect(prefill({ and: [{ state_group__in: "started" }, { state_id__in: "state-deleted" }] })).toEqual({
         state_id: "doing-2",

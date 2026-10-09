@@ -201,4 +201,45 @@ describe("getWorkItemCreatePrefill", () => {
       });
     });
   });
+
+  describe("page context", () => {
+    const onCycle = { ...context, route: { cycleId: "cycle-current" } };
+    const onModule = { ...context, route: { moduleId: "module-a" } };
+
+    it("puts the item in the page's cycle even when the filter names another cycle", () => {
+      expect(prefill({ cycle_id__exact: "cycle-upcoming" }, onCycle)).toEqual({ cycle_id: "cycle-current" });
+    });
+
+    it("puts the item in the page's cycle when several cycles are filtered", () => {
+      expect(
+        prefill({ and: [{ cycle_id__in: "cycle-current,cycle-upcoming" }, { priority__in: "high" }] }, onCycle)
+      ).toEqual({ priority: "high", cycle_id: "cycle-current" });
+    });
+
+    it("adds the page's cycle to a prefill from other filtered fields", () => {
+      expect(prefill({ assignee_id__in: "user-ann" }, onCycle)).toEqual({
+        assignee_ids: ["user-ann"],
+        cycle_id: "cycle-current",
+      });
+    });
+
+    it("keeps the page's module first and merges the usable filtered modules without duplicates", () => {
+      expect(prefill({ module_id__in: "module-b,module-a,module-archived" }, onModule)).toEqual({
+        module_ids: ["module-a", "module-b"],
+      });
+    });
+
+    it("adds the page's module to a prefill from other filtered fields", () => {
+      expect(prefill({ label_id__in: "label-bug" }, onModule)).toEqual({
+        label_ids: ["label-bug"],
+        module_ids: ["module-a"],
+      });
+    });
+
+    it("returns an empty prefill when only the page context is usable, so the action stays hidden", () => {
+      expect(prefill({}, { ...context, route: { cycleId: "cycle-current", moduleId: "module-a" } })).toEqual({});
+      expect(prefill({ assignee_id__in: "None" }, onCycle)).toEqual({});
+      expect(prefill({ module_id__in: "module-archived" }, onModule)).toEqual({});
+    });
+  });
 });

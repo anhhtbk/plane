@@ -101,7 +101,12 @@ export const ProjectViewLayoutRoot = observer(function ProjectViewLayoutRoot() {
       >
         {({ filter: projectViewWorkItemsFilter }) => (
           <div className="relative flex h-full w-full flex-col overflow-hidden">
-            {projectViewWorkItemsFilter && <WorkItemFiltersRow filter={projectViewWorkItemsFilter} />}
+            {projectViewWorkItemsFilter && (
+              <WorkItemFiltersRow
+                filter={projectViewWorkItemsFilter}
+                createContext={{ storeType: EIssuesStoreType.PROJECT_VIEW, workspaceSlug, projectId }}
+              />
+            )}
             <div className="relative h-full w-full overflow-auto">
               <ProjectViewIssueLayout activeLayout={activeLayout} viewId={viewId.toString()} />
             </div>

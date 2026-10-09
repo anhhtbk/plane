@@ -36,12 +36,15 @@ type TBaseWorkItemFiltersRowProps = Omit<
 };
 
 /**
- * Page the work item list belongs to; enables "Add with filters" on supported pages.
+ * Page the work item list belongs to; enables "Add with filters" on supported pages. `cycleId` / `moduleId`
+ * are the cycle or module of a cycle/module detail page, which the prefill always keeps.
  */
 type TWorkItemFiltersRowCreateContext = {
   storeType: EIssuesStoreType;
   workspaceSlug: string;
   projectId: string;
+  cycleId?: string;
+  moduleId?: string;
 };
 
 type TWorkItemFiltersRowProps = TBaseWorkItemFiltersRowProps & {
@@ -50,6 +53,9 @@ type TWorkItemFiltersRowProps = TBaseWorkItemFiltersRowProps & {
 
 const CREATE_FROM_FILTERS_STORE_TYPES: Partial<Record<EIssuesStoreType, true>> = {
   [EIssuesStoreType.PROJECT]: true,
+  [EIssuesStoreType.CYCLE]: true,
+  [EIssuesStoreType.MODULE]: true,
+  [EIssuesStoreType.PROJECT_VIEW]: true,
 };
 
 export const WorkItemFiltersRow = observer(function WorkItemFiltersRow(props: TWorkItemFiltersRowProps) {
@@ -68,7 +74,7 @@ const WorkItemFiltersRowWithCreate = observer(function WorkItemFiltersRowWithCre
   props: TBaseWorkItemFiltersRowProps & { createContext: TWorkItemFiltersRowCreateContext }
 ) {
   const {
-    createContext: { storeType, workspaceSlug, projectId },
+    createContext: { storeType, workspaceSlug, projectId, cycleId, moduleId },
     ...rowProps
   } = props;
   // states
@@ -100,6 +106,7 @@ const WorkItemFiltersRowWithCreate = observer(function WorkItemFiltersRowWithCre
         validModuleIds: getProjectModuleIds(projectId) ?? [],
         validLabelIds: getProjectLabelIds(projectId) ?? [],
         memberIds: getProjectMemberIds(projectId, false) ?? [],
+        route: { cycleId, moduleId },
       })
     : {};
   const hasPrefill = Object.keys(prefill).length > 0;

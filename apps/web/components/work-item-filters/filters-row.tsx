@@ -36,11 +36,15 @@ type TBaseWorkItemFiltersRowProps = Omit<
 };
 
 /**
- * Page the work item list belongs to; enables "Add with filters" on supported pages. `cycleId` / `moduleId`
+ * Page the work item list belongs to; passing it enables "Add with filters". `cycleId` / `moduleId`
  * are the cycle or module of a cycle/module detail page, which the prefill always keeps.
  */
 type TWorkItemFiltersRowCreateContext = {
-  storeType: EIssuesStoreType;
+  storeType:
+    | EIssuesStoreType.PROJECT
+    | EIssuesStoreType.CYCLE
+    | EIssuesStoreType.MODULE
+    | EIssuesStoreType.PROJECT_VIEW;
   workspaceSlug: string;
   projectId: string;
   cycleId?: string;
@@ -51,17 +55,9 @@ type TWorkItemFiltersRowProps = TBaseWorkItemFiltersRowProps & {
   createContext?: TWorkItemFiltersRowCreateContext;
 };
 
-const CREATE_FROM_FILTERS_STORE_TYPES: Partial<Record<EIssuesStoreType, true>> = {
-  [EIssuesStoreType.PROJECT]: true,
-  [EIssuesStoreType.CYCLE]: true,
-  [EIssuesStoreType.MODULE]: true,
-  [EIssuesStoreType.PROJECT_VIEW]: true,
-};
-
 export const WorkItemFiltersRow = observer(function WorkItemFiltersRow(props: TWorkItemFiltersRowProps) {
   const { createContext, ...rowProps } = props;
-  if (createContext && CREATE_FROM_FILTERS_STORE_TYPES[createContext.storeType])
-    return <WorkItemFiltersRowWithCreate {...rowProps} createContext={createContext} />;
+  if (createContext) return <WorkItemFiltersRowWithCreate {...rowProps} createContext={createContext} />;
   return <FiltersRow {...rowProps} />;
 });
 

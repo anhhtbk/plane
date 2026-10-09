@@ -33,7 +33,7 @@ export type TWorkItemCreatePrefillState = {
  * - validModuleIds: modules a new work item can join (not archived)
  * - validLabelIds: labels of the project
  * - memberIds: project members a work item can be assigned to
- * - route: the cycle/module of the page the work item is created from, if any
+ * - route: the page the work item is created from, as its cycle/module (none on other pages)
  */
 export type TWorkItemCreatePrefillContext = {
   states: TWorkItemCreatePrefillState[];
@@ -63,7 +63,17 @@ const SELECTION_OPERATORS: Record<string, true> = {
 };
 
 /** Priorities a work item can be created with from a filter; "none" is the form default, not a choice. */
-const PREFILLABLE_PRIORITIES: Record<string, true> = { urgent: true, high: true, medium: true, low: true };
+type TPrefillablePriority = Exclude<TIssuePriorities, "none">;
+
+const PREFILLABLE_PRIORITIES = {
+  urgent: true,
+  high: true,
+  medium: true,
+  low: true,
+} as const satisfies Record<TPrefillablePriority, true>;
+
+const isPrefillablePriority = (value: string): value is TPrefillablePriority =>
+  Object.hasOwn(PREFILLABLE_PRIORITIES, value);
 
 /**
  * Collects the usable values of every selection condition on `property`, one list per condition.
@@ -141,7 +151,7 @@ const getStateIdFromGroup = (
  * Title for a work item filtered by exactly one title condition: its text, trimmed. None when the
  * text is blank or several title conditions are filtered.
  */
-const getName = (conditions: readonly TPrefillCondition[]): string | undefined => {
+const getTitle = (conditions: readonly TPrefillCondition[]): string | undefined => {
   const titleConditions = conditions.filter(
     (condition) => condition.property === "name" && condition.operator === CORE_TEXT_OPERATOR.ICONTAINS
   );
@@ -159,8 +169,8 @@ const getFilterPrefill = (
 ): TWorkItemCreatePrefill => {
   const prefill: TWorkItemCreatePrefill = {};
 
-  const name = getName(conditions);
-  if (name) prefill.name = name;
+  const title = getTitle(conditions);
+  if (title) prefill.name = title;
 
   const assigneeIds = getMultiValue(conditions, "assignee_id", context.memberIds);
   if (assigneeIds) prefill.assignee_ids = assigneeIds;
@@ -179,11 +189,7 @@ const getFilterPrefill = (
     stateIdValues.length > 0 ? getCommonValue(stateIdValues) : getStateIdFromGroup(conditions, context.states);
   if (stateId) prefill.state_id = stateId;
 
-  const priority = getSingleValue(
-    conditions,
-    "priority",
-    (value): value is TIssuePriorities => PREFILLABLE_PRIORITIES[value] === true
-  );
+  const priority = getSingleValue(conditions, "priority", isPrefillablePriority);
   if (priority) prefill.priority = priority;
 
   const cycleId = getSingleValue(conditions, "cycle_id", (id): id is string => context.validCycleIds.includes(id));
@@ -198,7 +204,7 @@ const getFilterPrefill = (
  * module comes first in the modules. The page alone never makes a prefill, so the result stays empty
  * unless at least one filter condition can be used.
  * @param conditions - active filter conditions (the filter instance's `allConditions`)
- * @param context - project data used to validate filter values, plus the page's cycle/module
+ * @param context - project data used to validate filter values, plus the page (`route`)
  * @returns the work item values to prefill; empty when no filter condition can be used
  */
 export const getWorkItemCreatePrefill = (

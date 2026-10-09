@@ -23,7 +23,8 @@
       "dependency": "Pridať závislosť",
       "relation": "Pridať vzťah",
       "link": "Pridať odkaz",
-      "existing": "Pridať existujúcu pracovnú položku"
+      "existing": "Pridať existujúcu pracovnú položku",
+      "with_filters": "Pridať s filtrami"
     },
     "remove": {
       "label": "Odstrániť pracovnú položku",

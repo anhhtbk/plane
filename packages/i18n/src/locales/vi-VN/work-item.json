@@ -23,7 +23,8 @@
       "dependency": "Thêm phụ thuộc",
       "relation": "Thêm mối quan hệ",
       "link": "Thêm liên kết",
-      "existing": "Thêm mục công việc hiện có"
+      "existing": "Thêm mục công việc hiện có",
+      "with_filters": "Tạo với bộ lọc này"
     },
     "remove": {
       "label": "Xóa mục công việc",

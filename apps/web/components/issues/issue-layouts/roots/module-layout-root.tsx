@@ -81,7 +81,12 @@ export const ModuleLayoutRoot = observer(function ModuleLayoutRoot() {
       >
         {({ filter: moduleWorkItemsFilter }) => (
           <div className="relative flex h-full w-full flex-col overflow-hidden">
-            {moduleWorkItemsFilter && <WorkItemFiltersRow filter={moduleWorkItemsFilter} />}
+            {moduleWorkItemsFilter && (
+              <WorkItemFiltersRow
+                filter={moduleWorkItemsFilter}
+                createContext={{ storeType: EIssuesStoreType.MODULE, workspaceSlug, projectId, moduleId }}
+              />
+            )}
             <Row variant={ERowVariant.HUGGING} className="h-full w-full overflow-auto">
               <ModuleIssueLayout activeLayout={activeLayout} moduleId={moduleId} />
             </Row>

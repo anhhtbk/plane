@@ -23,7 +23,8 @@
       "dependency": "依存関係を追加",
       "relation": "関連を追加",
       "link": "リンクを追加",
-      "existing": "既存の作業項目を追加"
+      "existing": "既存の作業項目を追加",
+      "with_filters": "フィルターを適用して追加"
     },
     "remove": {
       "label": "作業項目を削除",

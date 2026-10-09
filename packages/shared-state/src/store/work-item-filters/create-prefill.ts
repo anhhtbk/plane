@@ -151,12 +151,9 @@ const getName = (conditions: readonly TPrefillCondition[]): string | undefined =
 };
 
 /**
- * Builds the create work item prefill from the active filter conditions of a project work item list.
- * @param conditions - active filter conditions (the filter instance's `allConditions`)
- * @param context - project data used to validate filter values
- * @returns the work item values to prefill; empty when no condition can be used
+ * Prefill from the active filter conditions alone, ignoring the page the work item is created from.
  */
-export const getWorkItemCreatePrefill = (
+const getFilterPrefill = (
   conditions: readonly TPrefillCondition[],
   context: TWorkItemCreatePrefillContext
 ): TWorkItemCreatePrefill => {
@@ -191,6 +188,29 @@ export const getWorkItemCreatePrefill = (
 
   const cycleId = getSingleValue(conditions, "cycle_id", (id): id is string => context.validCycleIds.includes(id));
   if (cycleId) prefill.cycle_id = cycleId;
+
+  return prefill;
+};
+
+/**
+ * Builds the create work item prefill from the active filter conditions of a project work item list.
+ * The page wins over the filter: on a cycle page the cycle is the page's cycle, on a module page the page's
+ * module comes first in the modules. The page alone never makes a prefill, so the result stays empty
+ * unless at least one filter condition can be used.
+ * @param conditions - active filter conditions (the filter instance's `allConditions`)
+ * @param context - project data used to validate filter values, plus the page's cycle/module
+ * @returns the work item values to prefill; empty when no filter condition can be used
+ */
+export const getWorkItemCreatePrefill = (
+  conditions: readonly TPrefillCondition[],
+  context: TWorkItemCreatePrefillContext
+): TWorkItemCreatePrefill => {
+  const prefill = getFilterPrefill(conditions, context);
+  if (Object.keys(prefill).length === 0) return prefill;
+
+  const { cycleId, moduleId } = context.route ?? {};
+  if (cycleId) prefill.cycle_id = cycleId;
+  if (moduleId) prefill.module_ids = [...new Set([moduleId, ...(prefill.module_ids ?? [])])];
 
   return prefill;
 };

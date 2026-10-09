@@ -111,7 +111,17 @@ export const CycleLayoutRoot = observer(function CycleLayoutRoot() {
                   disabled={!isEmpty(cycleDetails?.progress_snapshot)}
                 />
               )}
-              {cycleWorkItemsFilter && <WorkItemFiltersRow filter={cycleWorkItemsFilter} />}
+              {cycleWorkItemsFilter && (
+                <WorkItemFiltersRow
+                  filter={cycleWorkItemsFilter}
+                  // a completed cycle takes no new work items, matching the header's "Add work item"
+                  createContext={
+                    isCompletedCycle
+                      ? undefined
+                      : { storeType: EIssuesStoreType.CYCLE, workspaceSlug, projectId, cycleId }
+                  }
+                />
+              )}
               <div className="h-full w-full overflow-auto">
                 <CycleIssueLayout activeLayout={activeLayout} cycleId={cycleId} isCompletedCycle={isCompletedCycle} />
               </div>

@@ -14,7 +14,7 @@ import type {
   TStateGroups,
   TWorkItemFilterProperty,
 } from "@plane/types";
-import { COLLECTION_OPERATOR, EQUALITY_OPERATOR } from "@plane/types";
+import { COLLECTION_OPERATOR, CORE_TEXT_OPERATOR, EQUALITY_OPERATOR } from "@plane/types";
 
 /**
  * A project state as needed to resolve the state of a work item created from filters.
@@ -52,7 +52,7 @@ export type TWorkItemCreatePrefillContext = {
  * means nothing can be prefilled.
  */
 export type TWorkItemCreatePrefill = Partial<
-  Pick<TIssue, "assignee_ids" | "label_ids" | "module_ids" | "state_id" | "priority" | "cycle_id">
+  Pick<TIssue, "name" | "assignee_ids" | "label_ids" | "module_ids" | "state_id" | "priority" | "cycle_id">
 >;
 
 type TPrefillCondition = TFilterConditionNode<TWorkItemFilterProperty, TFilterValue>;
@@ -138,6 +138,19 @@ const getStateIdFromGroup = (
 };
 
 /**
+ * Title for a work item filtered by exactly one title condition: its text, trimmed. None when the
+ * text is blank or several title conditions are filtered.
+ */
+const getName = (conditions: readonly TPrefillCondition[]): string | undefined => {
+  const titleConditions = conditions.filter(
+    (condition) => condition.property === "name" && condition.operator === CORE_TEXT_OPERATOR.ICONTAINS
+  );
+  if (titleConditions.length !== 1) return undefined;
+  const value = titleConditions[0].value;
+  return typeof value === "string" ? value.trim() || undefined : undefined;
+};
+
+/**
  * Builds the create work item prefill from the active filter conditions of a project work item list.
  * @param conditions - active filter conditions (the filter instance's `allConditions`)
  * @param context - project data used to validate filter values
@@ -148,6 +161,9 @@ export const getWorkItemCreatePrefill = (
   context: TWorkItemCreatePrefillContext
 ): TWorkItemCreatePrefill => {
   const prefill: TWorkItemCreatePrefill = {};
+
+  const name = getName(conditions);
+  if (name) prefill.name = name;
 
   const assigneeIds = getMultiValue(conditions, "assignee_id", context.memberIds);
   if (assigneeIds) prefill.assignee_ids = assigneeIds;

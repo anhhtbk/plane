@@ -24,13 +24,21 @@ export type TFiltersRowProps<K extends TFilterProperty, E extends TExternalFilte
   buttonConfig?: TAddFilterButtonProps<K, E>["buttonConfig"];
   disabledAllOperations?: boolean;
   filter: IFilterInstance<K, E>;
+  /** Actions rendered at the end of the right cluster, regardless of the clear/save/update view actions. */
+  trailingActions?: React.ReactNode;
   variant?: "modal" | "header";
 };
 
 export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty, E extends TExternalFilter>(
   props: TFiltersRowProps<K, E>
 ) {
-  const { buttonConfig, disabledAllOperations: disabledAllOperationsProp = false, filter, variant = "header" } = props;
+  const {
+    buttonConfig,
+    disabledAllOperations: disabledAllOperationsProp = false,
+    filter,
+    trailingActions,
+    variant = "header",
+  } = props;
   // states
   const [isUpdating, setIsUpdating] = useState(false);
   // derived values
@@ -38,6 +46,7 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
   const hasAnyConditions = filter.allConditionsForDisplay.length > 0;
   const hasAvailableOperations =
     !disabledAllOperations && (filter.canClearFilters || filter.canSaveView || filter.canUpdateView);
+  const hasRightContent = hasAvailableOperations || trailingActions != null;
 
   const headerButtonConfig: Partial<TAddFilterButtonProps<K, E>["buttonConfig"]> = {
     label: null,
@@ -117,10 +126,11 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
       <div className="flex w-full flex-wrap items-center gap-2">{leftContent}</div>
       <div
         className={cn("flex items-center gap-2 border-l border-subtle pl-4", {
-          "border-l-transparent pl-0": !hasAvailableOperations,
+          "border-l-transparent pl-0": !hasRightContent,
         })}
       >
         {rightContent}
+        {trailingActions}
       </div>
     </div>
   );

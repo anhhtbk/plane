@@ -23,7 +23,8 @@
       "dependency": "Add dependency",
       "relation": "Add relation",
       "link": "Add link",
-      "existing": "Add existing work item"
+      "existing": "Add existing work item",
+      "with_filters": "Add with filters"
     },
     "remove": {
       "label": "Remove work item",

@@ -99,18 +99,22 @@ const getMultiValue = (
 };
 
 /**
+ * The one value every condition allows, if exactly one.
+ */
+const getCommonValue = <T extends string>([first, ...rest]: readonly T[][]): T | undefined => {
+  if (!first) return undefined;
+  const allowed = [...new Set(first)].filter((value) => rest.every((values) => values.includes(value)));
+  return allowed.length === 1 ? allowed[0] : undefined;
+};
+
+/**
  * Value for a single-value work item field: the one usable value every condition allows, if exactly one.
  */
 const getSingleValue = <T extends string>(
   conditions: readonly TPrefillCondition[],
   property: TWorkItemFilterProperty,
   isValid: (value: string) => value is T
-): T | undefined => {
-  const [first, ...rest] = getUsableValuesPerCondition(conditions, property, isValid);
-  if (!first) return undefined;
-  const allowed = [...new Set(first)].filter((value) => rest.every((values) => values.includes(value)));
-  return allowed.length === 1 ? allowed[0] : undefined;
-};
+): T | undefined => getCommonValue(getUsableValuesPerCondition(conditions, property, isValid));
 
 /**
  * State for a work item filtered to exactly one state group: the project default state if it is in
@@ -154,10 +158,12 @@ export const getWorkItemCreatePrefill = (
   const moduleIds = getMultiValue(conditions, "module_id", context.validModuleIds);
   if (moduleIds) prefill.module_ids = moduleIds;
 
-  // a usable state filter decides; the state group is used only without one
+  // a usable state filter decides, even when it leaves no single state; the group is used only without one
+  const stateIdValues = getUsableValuesPerCondition(conditions, "state_id", (id): id is string =>
+    context.states.some((state) => state.id === id)
+  );
   const stateId =
-    getSingleValue(conditions, "state_id", (id): id is string => context.states.some((state) => state.id === id)) ??
-    getStateIdFromGroup(conditions, context.states);
+    stateIdValues.length > 0 ? getCommonValue(stateIdValues) : getStateIdFromGroup(conditions, context.states);
   if (stateId) prefill.state_id = stateId;
 
   const priority = getSingleValue(

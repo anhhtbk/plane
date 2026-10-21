@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { act } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { renderDocumentEditor } from "@/test-utils/document-editor";
 
@@ -70,6 +70,42 @@ describe("Block deep link in the document editor", () => {
 
     act(() => document.querySelector<HTMLElement>(".ProseMirror")!.focus());
 
+    expect(highlightedBlockIds()).toEqual([]);
+  });
+
+  it("clears the highlight on the next click inside an editor that already has focus", async () => {
+    const { user } = await renderDocumentEditor({ content });
+    act(() => document.querySelector<HTMLElement>(".ProseMirror")!.focus());
+    await changeHash("#details");
+    expect(highlightedBlockIds()).toEqual(["details"]);
+
+    await user.click(screen.getByText("Introduction"));
+
+    expect(highlightedBlockIds()).toEqual([]);
+  });
+
+  it("clears the highlight on the next click inside a read-only editor", async () => {
+    const { user } = await renderDocumentEditor({ content, props: { editable: false } });
+    await changeHash("#details");
+    expect(highlightedBlockIds()).toEqual(["details"]);
+
+    await user.click(screen.getByText("Introduction"));
+
+    expect(highlightedBlockIds()).toEqual([]);
+  });
+
+  it("keeps one working clear when a block is highlighted twice in a row", async () => {
+    const { user } = await renderDocumentEditor({ content });
+    await changeHash("#details");
+    await changeHash("#intro");
+    expect(highlightedBlockIds()).toEqual(["intro"]);
+
+    await user.click(screen.getByText("Details"));
+    expect(highlightedBlockIds()).toEqual([]);
+
+    await changeHash("#details");
+    expect(highlightedBlockIds()).toEqual(["details"]);
+    await user.click(screen.getByText("Introduction"));
     expect(highlightedBlockIds()).toEqual([]);
   });
 });

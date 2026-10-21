@@ -13,7 +13,7 @@ import useSWR from "swr";
 import { LogoSpinner } from "@/components/common/logo-spinner";
 // helpers
 import { isValidNextPath } from "@plane/utils";
-import { EPageTypes } from "@/helpers/authentication.helper";
+import { EPageTypes, getSignInRoute } from "@/helpers/authentication.helper";
 // hooks
 import { useWorkspace } from "@/hooks/store/use-workspace";
 import { useUser, useUserProfile, useUserSettings } from "@/hooks/store/user";
@@ -53,8 +53,7 @@ export const AuthenticationWrapper = observer(function AuthenticationWrapper(pro
   const { data: currentUserSettings } = useUserSettings();
   const { loader: workspacesLoader, workspaces } = useWorkspace();
 
-  // Keep the hash so a block link (`<page url>#<block id>`) survives sign-in.
-  const signInRoute = `/${pathname ? `?next_path=${encodeURIComponent(`${pathname}${hash}`)}` : ``}`;
+  const signInRoute = getSignInRoute(pathname, hash);
 
   const { isLoading: isUserSWRLoading } = useSWR("USER_INFORMATION", async () => await fetchCurrentUser(), {
     revalidateOnFocus: false,

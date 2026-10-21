@@ -39,33 +39,36 @@ const handleContainerMouseLeave = () => {
   }
 };
 
+/** The block id a block link puts in the page hash (`<page url>#<block id>`), or `""` without a hash. */
+const getLinkedBlockId = (): string => window.location.hash.slice(1);
+
 export function EditorContainer(props: Props) {
   const { children, displayConfig, editor, editorContainerClassName, id, isTouchDevice, provider, state } = props;
   // refs
   const containerRef = useRef<HTMLDivElement>(null);
-  const hasScrolledOnce = useRef(false);
+  const hasFoundBlockOnce = useRef(false);
   const scrollToNode = useCallback(
     (nodeId: string) => {
       if (!editor) return false;
-      const hasScrolled = highlightLinkedBlock(editor, nodeId);
-      if (hasScrolled) hasScrolledOnce.current = true;
-      return hasScrolled;
+      const isBlockFound = highlightLinkedBlock(editor, nodeId);
+      if (isBlockFound) hasFoundBlockOnce.current = true;
+      return isBlockFound;
     },
     [editor]
   );
 
   useEffect(() => {
-    const nodeId = window.location.hash.slice(1);
+    const nodeId = getLinkedBlockId();
 
     const handleSynced = () => scrollToNode(nodeId);
 
-    if (nodeId && !hasScrolledOnce.current) {
+    if (nodeId && !hasFoundBlockOnce.current) {
       if (provider && state) {
         const { hasCachedContent } = state;
         // If the provider is synced or the cached content is available and the server is disconnected, scroll to the node
         if (hasCachedContent) {
-          const hasScrolled = handleSynced();
-          if (!hasScrolled) {
+          const isBlockFound = handleSynced();
+          if (!isBlockFound) {
             provider.on("synced", handleSynced);
           }
         } else if (provider.isSynced) {
@@ -88,7 +91,7 @@ export function EditorContainer(props: Props) {
   // changes the hash, so the page does not reload and the load-time effect above does not rerun.
   useEffect(() => {
     const handleHashChange = () => {
-      const nodeId = window.location.hash.slice(1);
+      const nodeId = getLinkedBlockId();
       if (nodeId) scrollToNode(nodeId);
     };
     window.addEventListener("hashchange", handleHashChange);

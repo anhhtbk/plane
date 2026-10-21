@@ -88,6 +88,21 @@ describe.each([
     expect(lastClickPrevented).toBe(true);
   });
 
+  it("clears the followed block's highlight on the next click in the editor", async () => {
+    const { user } = await renderDocumentEditor({
+      content: contentWithLink(`${pageURL()}#details`),
+      props: { editable },
+    });
+    const hashChange = nextHashChange();
+    await user.click(screen.getByText("Read the details"));
+    await hashChange;
+    expect(highlightedBlockIds()).toEqual(["details"]);
+
+    await user.click(screen.getByText("Details"));
+
+    expect(highlightedBlockIds()).toEqual([]);
+  });
+
   it.each([
     ["without a trailing slash on a slashed page path", "/workspace/pages/p1/", "/workspace/pages/p1#details"],
     ["with a trailing slash on a slashless page path", "/workspace/pages/p1", "/workspace/pages/p1/#details"],

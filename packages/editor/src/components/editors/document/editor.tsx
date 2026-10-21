@@ -41,6 +41,7 @@ function DocumentEditor(props: IDocumentEditorProps) {
     id,
     isTouchDevice,
     mentionHandler,
+    onCopyBlockLink,
     onChange,
     user,
     value,
@@ -104,6 +105,7 @@ function DocumentEditor(props: IDocumentEditorProps) {
       flaggedExtensions={flaggedExtensions}
       disabledExtensions={disabledExtensions}
       isTouchDevice={!!isTouchDevice}
+      onCopyBlockLink={onCopyBlockLink}
     />
   );
 }

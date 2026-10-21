@@ -18,6 +18,7 @@ import type {
   IEditorProps,
   IEditorPropsExtended,
   TAIHandler,
+  TCopyBlockLinkHandler,
   TDisplayConfig,
 } from "@/types";
 
@@ -36,6 +37,7 @@ type Props = {
   id: string;
   isLoading?: boolean;
   isTouchDevice: boolean;
+  onCopyBlockLink?: TCopyBlockLinkHandler;
   tabIndex?: number;
   provider?: HocuspocusProvider;
   state?: TCollabValue["state"];
@@ -54,6 +56,7 @@ export function PageRenderer(props: Props) {
     id,
     isLoading,
     isTouchDevice,
+    onCopyBlockLink,
     tabIndex,
     titleEditor,
     provider,
@@ -111,6 +114,7 @@ export function PageRenderer(props: Props) {
                   editor={editor}
                   flaggedExtensions={flaggedExtensions}
                   disabledExtensions={disabledExtensions}
+                  onCopyBlockLink={onCopyBlockLink}
                 />
               </div>
             )}

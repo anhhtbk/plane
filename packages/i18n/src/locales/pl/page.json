@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Osiągnięto limit treści, a synchronizacja na żywo jest wyłączona. Utwórz nową stronę lub użyj zagnieżdżonych stron, aby kontynuować synchronizację."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Link skopiowany",
+        "message": "Link do bloku skopiowano do schowka."
+      },
+      "copy_failed": {
+        "title": "Link nie został skopiowany",
+        "message": "Nie udało się skopiować linku do bloku. Spróbuj ponownie."
+      }
+    }
   }
 }

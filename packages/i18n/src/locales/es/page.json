@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Se alcanzó el límite de contenido y la sincronización en vivo está desactivada. Cree una página nueva o utilice páginas anidadas para continuar sincronizando."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Enlace copiado",
+        "message": "Enlace del bloque copiado al portapapeles."
+      },
+      "copy_failed": {
+        "title": "Enlace no copiado",
+        "message": "No se pudo copiar el enlace del bloque. Inténtelo de nuevo."
+      }
+    }
   }
 }

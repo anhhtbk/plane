@@ -14,15 +14,16 @@ import {
   useInteractions,
   FloatingPortal,
 } from "@floating-ui/react";
+import { NodeSelection } from "@tiptap/pm/state";
 import type { Editor } from "@tiptap/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CopyOutline, DeleteOutline } from "@makeplane/propel/icons";
+import { CopyOutline, DeleteOutline, LinkOutline } from "@makeplane/propel/icons";
 import type { ISvgIcons } from "@plane/blocks/icons";
 import { cn } from "@plane/utils";
 // constants
 import { CORE_EXTENSIONS } from "@/constants/extension";
 // types
-import type { IEditorProps } from "@/types";
+import type { IEditorProps, TCopyBlockLinkHandler } from "@/types";
 // components
 import { getNodeOptions } from "./block-menu-options";
 
@@ -30,6 +31,7 @@ type Props = {
   disabledExtensions?: IEditorProps["disabledExtensions"];
   editor: Editor;
   flaggedExtensions?: IEditorProps["flaggedExtensions"];
+  onCopyBlockLink?: TCopyBlockLinkHandler;
   workItemIdentifier?: IEditorProps["workItemIdentifier"];
 };
 export type BlockMenuOption = {
@@ -41,7 +43,7 @@ export type BlockMenuOption = {
 };
 
 export function BlockMenu(props: Props) {
-  const { editor } = props;
+  const { editor, onCopyBlockLink } = props;
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimatedIn, setIsAnimatedIn] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -147,6 +149,10 @@ export function BlockMenu(props: Props) {
     }
   }, [isOpen]);
 
+  const selectedBlockId: unknown =
+    editor.state.selection instanceof NodeSelection ? editor.state.selection.node.attrs.id : undefined;
+  const copyLinkBlockId = typeof selectedBlockId === "string" && selectedBlockId !== "" ? selectedBlockId : null;
+
   const MENU_ITEMS: BlockMenuOption[] = [
     {
       icon: DeleteOutline,
@@ -200,6 +206,18 @@ export function BlockMenu(props: Props) {
         }
       },
     },
+    ...(onCopyBlockLink && copyLinkBlockId
+      ? [
+          {
+            icon: LinkOutline,
+            key: "copy-link",
+            label: "Copy link",
+            onClick: () => {
+              void onCopyBlockLink(copyLinkBlockId);
+            },
+          },
+        ]
+      : []),
     ...getNodeOptions(editor),
   ];
 

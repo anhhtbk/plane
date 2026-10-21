@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "已達到內容上限，即時同步已關閉。請建立新頁面或使用巢狀頁面以繼續同步。"
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "連結已複製",
+        "message": "已將此區塊的連結複製到剪貼簿。"
+      },
+      "copy_failed": {
+        "title": "連結未複製",
+        "message": "無法複製此區塊的連結，請再試一次。"
+      }
+    }
   }
 }

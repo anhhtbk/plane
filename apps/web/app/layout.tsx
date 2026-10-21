@@ -12,10 +12,23 @@ import { ensureTrailingSlash } from "./compat/next/helper";
 import { AppProvider } from "./provider";
 import type { Route } from "./+types/layout";
 
+/**
+ * The fragment of the URL being loaded. React Router strips it from `request.url`, but on a
+ * document load it is still in `window.location`, which then names the same URL as the request.
+ * During a client-side navigation `window.location` is still the previous page, so no fragment.
+ */
+const getLoadedFragment = (requestUrl: string): string => {
+  const current = new URL(window.location.href);
+  const { hash } = current;
+  current.hash = "";
+  return current.href === new URL(requestUrl).href ? hash : "";
+};
+
 const trailingSlashRedirectMiddleware: Route.ClientMiddlewareFunction = async ({ request }, next) => {
   const canonical = ensureTrailingSlash(request.url);
   if (canonical !== request.url) {
-    throw redirect(canonical, { status: 308 });
+    // Keep the fragment, e.g. a block link `…/pages/<id>#<block id>` must still reach its block.
+    throw redirect(canonical + getLoadedFragment(request.url), { status: 308 });
   }
   return next();
 };

@@ -8,6 +8,7 @@ import { screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MockInstance } from "vitest";
 import { renderDocumentEditor } from "@/test-utils/document-editor";
+import { renderRichTextEditor } from "@/test-utils/rich-text-editor";
 
 const pageURL = () => `${window.location.origin}${window.location.pathname}`;
 
@@ -48,8 +49,8 @@ beforeEach(() => {
 afterEach(() => {
   window.removeEventListener("click", recordClick);
   openSpy.mockRestore();
-  // Reset without a `hashchange`, so no listener of the next test sees this one's hash.
-  history.replaceState(null, "", window.location.pathname);
+  // Reset without a `hashchange`, so no listener of the next test sees this one's hash or path.
+  history.replaceState(null, "", "/");
 });
 
 describe.each([
@@ -88,6 +89,27 @@ describe.each([
   });
 
   it.each([
+    ["without a trailing slash on a slashed page path", "/workspace/pages/p1/", "/workspace/pages/p1#details"],
+    ["with a trailing slash on a slashless page path", "/workspace/pages/p1", "/workspace/pages/p1/#details"],
+  ])("follows a block link of the open page %s in place", async (_case, pagePath, href) => {
+    history.replaceState(null, "", pagePath);
+    const { user } = await renderDocumentEditor({
+      content: contentWithLink(`${window.location.origin}${href}`),
+      props: { editable },
+    });
+
+    const hashChange = nextHashChange();
+    await user.click(screen.getByText("Read the details"));
+    await hashChange;
+
+    expect(window.location.pathname).toBe(pagePath);
+    expect(window.location.hash).toBe("#details");
+    expect(highlightedBlockIds()).toEqual(["details"]);
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(lastClickPrevented).toBe(true);
+  });
+
+  it.each([
     ["another page", "https://plane.example/workspace/pages/other#details"],
     ["the open page without a block", "/"],
   ])("opens a link to %s in a new tab", async (_target, href) => {
@@ -108,6 +130,25 @@ describe.each([
     await user.keyboard("{/Control}");
 
     expect(openSpy).toHaveBeenCalledWith(href, "_blank");
+    expect(highlightedBlockIds()).toEqual([]);
+  });
+});
+
+describe.each([
+  ["editable", true],
+  ["read-only", false],
+])("Link click in the %s rich-text editor", (_mode, editable) => {
+  it("opens a block link of the open page in a new tab", async () => {
+    const href = `${pageURL()}#details`;
+    const { user } = await renderRichTextEditor({
+      content: `<p id="intro"><a href="${href}">Read the details</a></p><p id="details">Details</p>`,
+      props: { editable },
+    });
+
+    await user.click(screen.getByText("Read the details"));
+
+    expect(openSpy).toHaveBeenCalledWith(href, "_blank");
+    expect(window.location.hash).toBe("");
     expect(highlightedBlockIds()).toEqual([]);
   });
 });

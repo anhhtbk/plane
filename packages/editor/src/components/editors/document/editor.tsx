@@ -79,6 +79,7 @@ function DocumentEditor(props: IDocumentEditorProps) {
     extensions,
     fileHandler,
     flaggedExtensions,
+    followBlockLinksInPlace: true,
     forwardedRef,
     getEditorMetaData,
     handleEditorReady,

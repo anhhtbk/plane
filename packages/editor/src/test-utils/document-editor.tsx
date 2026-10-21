@@ -17,23 +17,26 @@ import type { IDocumentEditorProps } from "@/types";
 const noop = () => {};
 const rejectAsset = () => Promise.reject(new Error("Assets are not available in tests"));
 
+/** A file handler whose assets never load, for editors under test. */
+export const inertFileHandler: IDocumentEditorProps["fileHandler"] = {
+  assetsUploadStatus: {},
+  cancel: noop,
+  checkIfAssetExists: () => Promise.resolve(false),
+  delete: () => Promise.resolve(),
+  duplicate: rejectAsset,
+  getAssetDownloadSrc: rejectAsset,
+  getAssetSrc: rejectAsset,
+  restore: () => Promise.resolve(),
+  upload: rejectAsset,
+  validation: { maxFileSize: 5 * 1024 * 1024 },
+};
+
 /** The required props of a non-collaborative document editor, with inert handlers. */
 const defaultProps: IDocumentEditorProps = {
   disabledExtensions: [],
   editable: true,
   extendedEditorProps: {},
-  fileHandler: {
-    assetsUploadStatus: {},
-    cancel: noop,
-    checkIfAssetExists: () => Promise.resolve(false),
-    delete: () => Promise.resolve(),
-    duplicate: rejectAsset,
-    getAssetDownloadSrc: rejectAsset,
-    getAssetSrc: rejectAsset,
-    restore: () => Promise.resolve(),
-    upload: rejectAsset,
-    validation: { maxFileSize: 5 * 1024 * 1024 },
-  },
+  fileHandler: inertFileHandler,
   flaggedExtensions: [],
   getEditorMetaData: () => ({ file_assets: [], user_mentions: [] }),
   id: "test-document-editor",

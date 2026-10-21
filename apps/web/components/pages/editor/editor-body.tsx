@@ -24,6 +24,8 @@ import type { TSearchEntityRequestPayload, TSearchResponse, TWebhookConnectionQu
 import { ERowVariant, Row } from "@plane/blocks/layout";
 import { setToast } from "@plane/blocks/toast";
 import { cn, copyUrlToClipboard, generateRandomColor, hslToHex } from "@plane/utils";
+// app
+import { ensureTrailingSlash } from "@/app/compat/next/helper";
 // components
 import { EditorMentionsRoot } from "@/components/editor/embeds/mentions";
 // hooks
@@ -201,7 +203,8 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
   const handleCopyBlockLink = useCallback(
     async (blockId: string) => {
       try {
-        await copyUrlToClipboard(`${handlers.getRedirectionLink(pageId)}#${blockId}`);
+        // The canonical page path ends in `/`; a slashless one would be redirected without its hash.
+        await copyUrlToClipboard(`${ensureTrailingSlash(handlers.getRedirectionLink(pageId))}#${blockId}`);
         setToast({
           type: "success",
           title: t("page_block_link.toasts.copied.title"),

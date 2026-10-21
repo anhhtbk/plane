@@ -59,6 +59,7 @@ type TArguments = Pick<
 > & {
   enableHistory: boolean;
   editable: boolean;
+  followBlockLinksInPlace: boolean;
   provider: HocuspocusProvider | undefined;
 };
 
@@ -66,6 +67,7 @@ export const CoreEditorExtensions = (args: TArguments): Extensions => {
   const {
     disabledExtensions,
     enableHistory,
+    followBlockLinksInPlace,
     fileHandler,
     flaggedExtensions,
     getEditorMetaData,
@@ -88,7 +90,7 @@ export const CoreEditorExtensions = (args: TArguments): Extensions => {
     CustomHorizontalRule,
     CustomKeymap,
     ListKeymap({ tabIndex }),
-    CustomLinkExtension,
+    CustomLinkExtension.configure({ followBlockLinksInPlace }),
     CustomTypographyExtension,
     Underline,
     TextStyle,

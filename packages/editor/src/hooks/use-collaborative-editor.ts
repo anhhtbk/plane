@@ -120,6 +120,7 @@ export const useCollaborativeEditor = (props: UseCollaborativeEditorArgs) => {
       extensions: editorExtensions,
       fileHandler,
       flaggedExtensions,
+      followBlockLinksInPlace: true,
       forwardedRef,
       getEditorMetaData,
       handleEditorReady,

@@ -13,23 +13,34 @@ import { highlightLinkedBlock } from "@/helpers/block-deep-link";
 
 type ClickHandlerOptions = {
   editor: Editor;
+  /** Whether a block link of the open page is followed in place rather than in a new tab. */
+  followBlockLinksInPlace: boolean;
   type: MarkType;
 };
 
+/** A pathname without its trailing slash, so `/a/b` and `/a/b/` name the same page. */
+const withoutTrailingSlash = (pathname: string): string => pathname.replace(/\/+$/, "");
+
 /**
  * The hash of a plain left click on a link to a block of the open page (same origin and path,
- * non-empty hash), or `null` for any other click, which keeps opening in a new tab.
+ * ignoring a trailing slash, non-empty hash), or `null` for any other click, which keeps opening
+ * in a new tab.
  */
 function getSamePageBlockHash(event: MouseEvent): string | null {
   if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null;
   const anchor = event.target instanceof Element ? event.target.closest("a") : null;
   if (!anchor?.href || !URL.canParse(anchor.href)) return null;
   const url = new URL(anchor.href);
-  const isOpenPage = url.origin === window.location.origin && url.pathname === window.location.pathname;
+  const isOpenPage =
+    url.origin === window.location.origin &&
+    withoutTrailingSlash(url.pathname) === withoutTrailingSlash(window.location.pathname);
   return isOpenPage && url.hash.length > 1 ? url.hash : null;
 }
 
 export function clickHandler(options: ClickHandlerOptions): Plugin {
+  const getInPlaceBlockHash = (event: MouseEvent): string | null =>
+    options.followBlockLinksInPlace ? getSamePageBlockHash(event) : null;
+
   return new Plugin({
     key: new PluginKey("handleClickLink"),
     props: {
@@ -39,7 +50,7 @@ export function clickHandler(options: ClickHandlerOptions): Plugin {
         }
 
         // Followed in place by the `click` handler below.
-        if (getSamePageBlockHash(event)) {
+        if (getInPlaceBlockHash(event)) {
           return false;
         }
 
@@ -80,11 +91,12 @@ export function clickHandler(options: ClickHandlerOptions): Plugin {
         return false;
       },
       handleDOMEvents: {
-        // A block link of the open page scrolls to and highlights its block in place, in editable
-        // and read-only editors alike. `handleClick` runs on mouseup, too early to stop a read-only
-        // editor's browser from following the `target="_blank"` link, so the click is handled here.
+        // With `followBlockLinksInPlace`, a block link of the open page scrolls to and highlights its
+        // block in place, in editable and read-only editors alike. `handleClick` runs on mouseup, too
+        // early to stop a read-only editor's browser from following the `target="_blank"` link, so
+        // the click is handled here.
         click: (_view, event) => {
-          const hash = getSamePageBlockHash(event);
+          const hash = getInPlaceBlockHash(event);
           if (!hash) return false;
           event.preventDefault();
           // Setting an unchanged hash fires no `hashchange`, so highlight directly.

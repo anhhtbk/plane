@@ -16,8 +16,8 @@ import { CORE_EXTENSIONS } from "@/constants/extension";
 // components
 import type { TCollabValue } from "@/contexts";
 import { LinkContainer } from "@/components/link-container";
-// plugins
-import { nodeHighlightPluginKey } from "@/plugins/highlight";
+// helpers
+import { highlightLinkedBlock } from "@/helpers/block-deep-link";
 // types
 import type { TDisplayConfig } from "@/types";
 
@@ -32,6 +32,13 @@ type Props = {
   state?: TCollabValue["state"];
 };
 
+const handleContainerMouseLeave = () => {
+  const dragHandleElement = document.querySelector("#editor-side-menu");
+  if (!dragHandleElement?.classList.contains("side-menu-hidden")) {
+    dragHandleElement?.classList.add("side-menu-hidden");
+  }
+};
+
 export function EditorContainer(props: Props) {
   const { children, displayConfig, editor, editorContainerClassName, id, isTouchDevice, provider, state } = props;
   // refs
@@ -40,46 +47,15 @@ export function EditorContainer(props: Props) {
   const scrollToNode = useCallback(
     (nodeId: string) => {
       if (!editor) return false;
-
-      const doc = editor.state.doc;
-      let pos: number | null = null;
-
-      doc.descendants((node, position) => {
-        if (node.attrs && node.attrs.id === nodeId) {
-          pos = position;
-          return false;
-        }
-      });
-
-      if (pos === null) {
-        return false;
-      }
-
-      const nodePosition = pos;
-      const tr = editor.state.tr.setMeta(nodeHighlightPluginKey, { nodeId });
-      editor.view.dispatch(tr);
-
-      requestAnimationFrame(() => {
-        const domNode = editor.view.nodeDOM(nodePosition);
-        if (domNode instanceof HTMLElement) {
-          domNode.scrollIntoView({ behavior: "instant", block: "center" });
-        }
-      });
-
-      editor.once("focus", () => {
-        const clearTr = editor.state.tr.setMeta(nodeHighlightPluginKey, { nodeId: null });
-        editor.view.dispatch(clearTr);
-      });
-
-      hasScrolledOnce.current = true;
-      return true;
+      const hasScrolled = highlightLinkedBlock(editor, nodeId);
+      if (hasScrolled) hasScrolledOnce.current = true;
+      return hasScrolled;
     },
-
     [editor]
   );
 
   useEffect(() => {
-    const nodeId = window.location.href.split("#")[1];
+    const nodeId = window.location.hash.slice(1);
 
     const handleSynced = () => scrollToNode(nodeId);
 
@@ -107,6 +83,17 @@ export function EditorContainer(props: Props) {
       };
     }
   }, [scrollToNode, provider, state]);
+
+  // A block link of the open page (pasted into the address bar, or followed in the same tab) only
+  // changes the hash, so the page does not reload and the load-time effect above does not rerun.
+  useEffect(() => {
+    const handleHashChange = () => {
+      const nodeId = window.location.hash.slice(1);
+      if (nodeId) scrollToNode(nodeId);
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, [scrollToNode]);
 
   const handleContainerClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if (event.target !== event.currentTarget) return;
@@ -153,15 +140,9 @@ export function EditorContainer(props: Props) {
     }
   };
 
-  const handleContainerMouseLeave = () => {
-    const dragHandleElement = document.querySelector("#editor-side-menu");
-    if (!dragHandleElement?.classList.contains("side-menu-hidden")) {
-      dragHandleElement?.classList.add("side-menu-hidden");
-    }
-  };
-
   return (
     <>
+      {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- clicking the margin around the editor focuses it; keyboard users focus the editor itself */}
       <div
         ref={containerRef}
         id={`editor-container-${id}`}

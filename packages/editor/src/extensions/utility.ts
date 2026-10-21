@@ -13,6 +13,7 @@ import { restorePublicImages } from "@/helpers/image-helpers";
 import type { TAdditionalActiveDropbarExtensions } from "@/types/utils";
 import { DropHandlerPlugin } from "@/plugins/drop";
 import { FilePlugins } from "@/plugins/file/root";
+import { NodeHighlightPlugin } from "@/plugins/highlight";
 import { MarkdownClipboardPlugin } from "@/plugins/markdown-clipboard";
 import type { IEditorProps, TEditorAsset, TFileHandler } from "@/types";
 
@@ -71,6 +72,8 @@ export const UtilityExtension = (props: Props) => {
 
     addProseMirrorPlugins() {
       return [
+        // Highlights the block a block link points at (see `helpers/block-deep-link.ts`).
+        NodeHighlightPlugin(),
         ...FilePlugins({
           editor: this.editor,
           isEditable,
@@ -116,7 +119,7 @@ export const UtilityExtension = (props: Props) => {
               uniqueAssets.add(args.asset);
             }
           } else if ("idToRemove" in args) {
-            const asset = this.storage.assetsList.find((asset) => asset.id === args.idToRemove);
+            const asset = this.storage.assetsList.find((listedAsset) => listedAsset.id === args.idToRemove);
             if (asset) {
               uniqueAssets.delete(asset);
             }

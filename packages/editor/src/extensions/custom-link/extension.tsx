@@ -269,6 +269,7 @@ export const CustomLinkExtension = Mark.create<LinkOptions, CustomLinkStorage>({
     if (this.options.openOnClick) {
       plugins.push(
         clickHandler({
+          editor: this.editor,
           type: this.type,
         })
       );

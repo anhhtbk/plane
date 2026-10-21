@@ -8,6 +8,8 @@
 import type { AxiosInstance, AxiosRequestConfig } from "axios";
 import { create } from "axios";
 import { normalizeAPIRequestURL } from "@plane/services";
+// helpers
+import { getSignInRoute } from "@/helpers/authentication.helper";
 
 export abstract class APIService {
   protected baseURL: string;
@@ -48,10 +50,7 @@ export abstract class APIService {
           // letting the sign-in screen render. Only bounce away from private
           // routes.
           if (currentPath !== "/") {
-            // Keep the hash so a block link (`<page url>#<block id>`) survives sign-in.
-            window.location.replace(
-              `/${currentPath ? `?next_path=${encodeURIComponent(`${currentPath}${hash}`)}` : ``}`
-            );
+            window.location.replace(getSignInRoute(currentPath, hash));
           }
         }
         return Promise.reject(error);

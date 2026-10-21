@@ -9,6 +9,13 @@ import Link from "next/link";
 // plane imports
 import { SUPPORT_EMAIL } from "@plane/constants";
 
+/**
+ * The sign-in route that returns to `pathname` after sign-in, keeping `hash` so a block link
+ * (`<page url>#<block id>`) survives sign-in. Without a pathname, plain `/`.
+ */
+export const getSignInRoute = (pathname: string, hash: string): string =>
+  `/${pathname ? `?next_path=${encodeURIComponent(`${pathname}${hash}`)}` : ``}`;
+
 export enum EPageTypes {
   PUBLIC = "PUBLIC",
   NON_AUTHENTICATED = "NON_AUTHENTICATED",

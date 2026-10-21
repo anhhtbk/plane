@@ -41,14 +41,17 @@ export abstract class APIService {
       (response) => response,
       (error) => {
         if (error.response && error.response.status === 401) {
-          const currentPath = window.location.pathname;
+          const { pathname: currentPath, hash } = window.location;
           // The entry page ("/") runs its own current-user request on mount;
           // when the session is expired that request 401s too, and redirecting
           // "/" to "/?next_path=/" reloads the page in an endless loop instead of
           // letting the sign-in screen render. Only bounce away from private
           // routes.
           if (currentPath !== "/") {
-            window.location.replace(`/${currentPath ? `?next_path=${encodeURIComponent(currentPath)}` : ``}`);
+            // Keep the hash so a block link (`<page url>#<block id>`) survives sign-in.
+            window.location.replace(
+              `/${currentPath ? `?next_path=${encodeURIComponent(`${currentPath}${hash}`)}` : ``}`
+            );
           }
         }
         return Promise.reject(error);

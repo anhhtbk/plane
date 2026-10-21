@@ -100,24 +100,27 @@ export function PageRenderer(props: Props) {
             state={state}
           >
             <EditorContentWrapper editor={editor} id={id} tabIndex={tabIndex} />
-            {editor.isEditable && !isTouchDevice && (
-              <div>
-                {bubbleMenuEnabled && (
-                  <EditorBubbleMenu
+            {!isTouchDevice &&
+              (editor.isEditable ? (
+                <div>
+                  {bubbleMenuEnabled && (
+                    <EditorBubbleMenu
+                      editor={editor}
+                      disabledExtensions={disabledExtensions}
+                      extendedEditorProps={extendedEditorProps}
+                      flaggedExtensions={flaggedExtensions}
+                    />
+                  )}
+                  <BlockMenu
                     editor={editor}
-                    disabledExtensions={disabledExtensions}
-                    extendedEditorProps={extendedEditorProps}
                     flaggedExtensions={flaggedExtensions}
+                    disabledExtensions={disabledExtensions}
+                    onCopyBlockLink={onCopyBlockLink}
                   />
-                )}
-                <BlockMenu
-                  editor={editor}
-                  flaggedExtensions={flaggedExtensions}
-                  disabledExtensions={disabledExtensions}
-                  onCopyBlockLink={onCopyBlockLink}
-                />
-              </div>
-            )}
+                </div>
+              ) : (
+                onCopyBlockLink && <BlockMenu editor={editor} onCopyBlockLink={onCopyBlockLink} />
+              ))}
           </EditorContainer>
         </>
       )}

@@ -18,6 +18,21 @@ type Props = {
   dragDropEnabled: boolean;
 };
 
+export type SideMenuExtensionStorage = {
+  /**
+   * Set by a Block menu that has something to offer while the editor is not editable (Copy link).
+   * Only then does hovering a block in a read-only editor show the drag handle, which opens that
+   * menu; it can't drag, and the AI handle stays hidden.
+   */
+  isReadOnlyMenuEnabled: boolean;
+};
+
+declare module "@tiptap/core" {
+  interface Storage {
+    [CORE_EXTENSIONS.SIDE_MENU]: SideMenuExtensionStorage;
+  }
+}
+
 export type SideMenuPluginProps = {
   dragHandleWidth: number;
   handlesConfig: {
@@ -40,18 +55,27 @@ export type SideMenuHandleOptions = {
 export const SideMenuExtension = (props: Props) => {
   const { aiEnabled, dragDropEnabled } = props;
 
-  return Extension.create({
+  return Extension.create<unknown, SideMenuExtensionStorage>({
     name: CORE_EXTENSIONS.SIDE_MENU,
+    addStorage() {
+      return {
+        isReadOnlyMenuEnabled: false,
+      };
+    },
     addProseMirrorPlugins() {
+      const storage = this.storage;
       return [
-        SideMenu({
-          dragHandleWidth: 24,
-          handlesConfig: {
-            ai: aiEnabled,
-            dragDrop: dragDropEnabled,
+        SideMenu(
+          {
+            dragHandleWidth: 24,
+            handlesConfig: {
+              ai: aiEnabled,
+              dragDrop: dragDropEnabled,
+            },
+            scrollThreshold: { up: 200, down: 150 },
           },
-          scrollThreshold: { up: 200, down: 150 },
-        }),
+          () => storage.isReadOnlyMenuEnabled
+        ),
       ];
     },
   });
@@ -67,7 +91,7 @@ const absoluteRect = (node: Element) => {
   };
 };
 
-const SideMenu = (options: SideMenuPluginProps) => {
+const SideMenu = (options: SideMenuPluginProps, isReadOnlyMenuEnabled: () => boolean) => {
   const { handlesConfig } = options;
   const editorSideMenu: HTMLDivElement | null = document.createElement("div");
   editorSideMenu.id = "editor-side-menu";
@@ -79,6 +103,19 @@ const SideMenu = (options: SideMenuPluginProps) => {
   // side menu elements
   const { view: dragHandleView, domEvents: dragHandleDOMEvents } = DragHandlePlugin(options);
   const { view: aiHandleView, domEvents: aiHandleDOMEvents } = AIHandlePlugin(options);
+  // A read-only editor shows no AI handle and cannot drag from the drag handle.
+  let syncedEditable: boolean | null = null;
+  const syncHandlesWithEditability = (view: EditorView) => {
+    if (syncedEditable === view.editable) return;
+    syncedEditable = view.editable;
+    const aiHandle = editorSideMenu.querySelector<HTMLElement>("#ai-handle");
+    if (aiHandle) aiHandle.style.display = view.editable ? "" : "none";
+    const dragHandle = editorSideMenu.querySelector<HTMLElement>("#drag-handle");
+    if (dragHandle) {
+      dragHandle.draggable = view.editable;
+      dragHandle.style.cursor = view.editable ? "" : "pointer";
+    }
+  };
 
   return new Plugin({
     key: new PluginKey("sideMenu"),
@@ -94,14 +131,31 @@ const SideMenu = (options: SideMenuPluginProps) => {
         dragHandleView(view, editorSideMenu);
       }
 
+      syncHandlesWithEditability(view);
+      // Also cancels a drag forced past `draggable` (e.g. a synthetic dragstart). Capturing on the
+      // side menu runs before the drag handle's own dragstart listener.
+      const preventReadOnlyDrag = (event: DragEvent) => {
+        if (view.editable) return;
+        event.preventDefault();
+        event.stopPropagation();
+      };
+      editorSideMenu.addEventListener("dragstart", preventReadOnlyDrag, true);
+
       return {
-        destroy: () => hideSideMenu(),
+        update: (updatedView) => syncHandlesWithEditability(updatedView),
+        destroy: () => {
+          editorSideMenu.removeEventListener("dragstart", preventReadOnlyDrag, true);
+          hideSideMenu();
+        },
       };
     },
     props: {
       handleDOMEvents: {
         mousemove: (view, event) => {
-          if (!view.editable) return;
+          const isReadOnly = !view.editable;
+          // Read-only: only the drag handle, and only when it opens a Block menu.
+          if (isReadOnly && !(handlesConfig.dragDrop && isReadOnlyMenuEnabled())) return;
+          const showAIHandle = handlesConfig.ai && !isReadOnly;
 
           const node = nodeDOMAtCoords({
             x: event.clientX + 50 + options.dragHandleWidth,
@@ -122,7 +176,7 @@ const SideMenu = (options: SideMenuPluginProps) => {
           rect.top += (lineHeight - 20) / 2;
           rect.top += paddingTop;
 
-          if (handlesConfig.ai) {
+          if (showAIHandle) {
             rect.left -= 20;
           }
 
@@ -152,7 +206,7 @@ const SideMenu = (options: SideMenuPluginProps) => {
           if (handlesConfig.dragDrop) {
             dragHandleDOMEvents?.mousemove();
           }
-          if (handlesConfig.ai) {
+          if (showAIHandle) {
             aiHandleDOMEvents?.mousemove?.();
           }
         },

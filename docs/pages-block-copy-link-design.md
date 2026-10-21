@@ -6,9 +6,9 @@ Thêm mục **"Copy link"** vào Block menu của document editor trong Plane Pa
 
 ## Terms
 
-- **Block**: một node khối của editor có attr `id` do extension UniqueID sinh (paragraph, heading, list item, task item, table, image, callout, code…). *Tránh:* "dòng", "đoạn".
-- **Block link**: URL của page kèm fragment `#<block id>`; mở ra thì editor scroll tới block và highlight nó. *Tránh:* "anchor link", "permalink".
-- **Block menu**: menu nổi mở khi bấm drag handle (⋮⋮) bên trái block (`packages/editor/src/components/menus/block-menu.tsx`), hiện có Delete, Duplicate và các tuỳ chọn theo node. *Tránh:* "context menu", "menu chuột phải".
+- **Block**: một node khối của editor có attr `id` do extension UniqueID sinh (paragraph, heading, list item, task item, table, image, callout, code…). _Tránh:_ "dòng", "đoạn".
+- **Block link**: URL của page kèm fragment `#<block id>`; mở ra thì editor scroll tới block và highlight nó. _Tránh:_ "anchor link", "permalink".
+- **Block menu**: menu nổi mở khi bấm drag handle (⋮⋮) bên trái block (`packages/editor/src/components/menus/block-menu.tsx`), hiện có Delete, Duplicate và các tuỳ chọn theo node. _Tránh:_ "context menu", "menu chuột phải".
 
 ## Why
 
@@ -17,20 +17,23 @@ Trong Plane Pages, người dùng muốn copy một link trỏ thẳng tới m�
 ## Locked decisions
 
 ### Q3: Chỉ áp dụng cho Pages (document editor)
+
 - **Quyết định:** Copy link chỉ có trong document editor của Pages.
-- **Bị loại:** *Pages + mọi rich-text editor có Block menu* (mô tả work item, v.v.). Lý do: ở work item, URL đang mở có thể là peek view/modal, nên link phải trỏ tới trang chi tiết; fragment cũng có thể đụng với điều hướng ở đó. Mở rộng sau chỉ cần truyền handler (xem Q4).
+- **Bị loại:** _Pages + mọi rich-text editor có Block menu_ (mô tả work item, v.v.). Lý do: ở work item, URL đang mở có thể là peek view/modal, nên link phải trỏ tới trang chi tiết; fragment cũng có thể đụng với điều hướng ở đó. Mở rộng sau chỉ cần truyền handler (xem Q4).
 - **Cái giá:** Block menu hành xử khác nhau giữa hai editor.
 
 ### Q4: Web app dựng URL qua handler
+
 - **Quyết định:** Web app truyền một handler (ví dụ `getBlockLink(blockId)` hoặc một handler copy hoàn chỉnh) vào document editor, nối qua `apps/web/components/pages/editor/editor-body.tsx`. Handler dựng URL chuẩn của page từ `handlers.getRedirectionLink(pageId)` cộng `#<blockId>`, rồi copy bằng `copyUrlToClipboard` hoặc `copyTextToClipboard` (`packages/utils/src/string.ts`). Block menu chỉ hiện "Copy link" khi handler được truyền. Đây cũng là cơ chế thực thi Q3.
-- **Bị loại:** *Editor tự dựng `window.location.origin + pathname + #id`*. Lý do: phụ thuộc vào route và query đang mở, không phải URL chuẩn; và không có cách tự nhiên để giới hạn tính năng chỉ cho Pages.
+- **Bị loại:** _Editor tự dựng `window.location.origin + pathname + #id`_. Lý do: phụ thuộc vào route và query đang mở, không phải URL chuẩn; và không có cách tự nhiên để giới hạn tính năng chỉ cho Pages.
 - **Cái giá:** thêm một prop vào API công khai của document editor (`@plane/editor`).
 
 ### Q7: Người chỉ xem vẫn copy được link
+
 - **Quyết định:** Ở chế độ không editable (viewer, page locked hoặc archived), vẫn hiện drag handle; Block menu chỉ có "Copy link". Không drag, không Delete/Duplicate, không AI handle, không node options.
 - **Bị loại:**
-  - *Chỉ người đang sửa, trên desktop*: chia sẻ link là thao tác đọc, nên viewer và page đã lock là đúng những trường hợp cần nó.
-  - *Ở read-only chỉ heading có icon 🔗 khi hover*: thêm một điểm bấm thứ hai, trái với Q1, và không phủ được các block không phải heading.
+  - _Chỉ người đang sửa, trên desktop_: chia sẻ link là thao tác đọc, nên viewer và page đã lock là đúng những trường hợp cần nó.
+  - _Ở read-only chỉ heading có icon 🔗 khi hover_: thêm một điểm bấm thứ hai, trái với Q1, và không phủ được các block không phải heading.
 - **Cần thay đổi (đã kiểm tra):** `page-renderer.tsx` hiện chỉ render BlockMenu khi `editor.isEditable && !isTouchDevice`; `SideMenuExtension` (`packages/editor/src/extensions/side-menu.ts`) return sớm ở `mousemove` khi `!view.editable`. Cả hai phải cho phép chế độ read-only chỉ có Copy link.
 - **Giới hạn giữ nguyên:** thiết bị cảm ứng vẫn không có Block menu, nên không copy được block link.
 
@@ -39,7 +42,9 @@ Trong Plane Pages, người dùng muốn copy một link trỏ thẳng tới m�
 - **Q1, điểm bấm:** chỉ thêm mục "Copy link" vào Block menu. Không có icon hover heading, không có phím tắt.
 - **Q2, block nào:** đúng node mà drag handle đang chọn, kể cả list item/task item lồng. Ẩn mục nếu node được chọn không có `id`.
 - **Q5, phản hồi:** web app hiện toast "đã copy link" trong handler; lỗi clipboard thì hiện toast lỗi. Chuỗi đi qua `@plane/i18n`.
-- **Q6, cùng page:** lắng nghe `hashchange`. Mỗi khi hash đổi thì scroll và highlight, dùng lại logic `scrollToNode` trong `packages/editor/src/components/editors/editor-container.tsx` (tách ra khỏi effect chỉ chạy một lần, vốn bị chặn bởi `hasScrolledOnce`).
+- **Q6, cùng page:** lắng nghe `hashchange`. Mỗi khi hash đổi thì scroll và highlight bằng hàm dùng chung `highlightLinkedBlock` (`packages/editor/src/helpers/block-deep-link.ts`), được tách từ `scrollToNode` trong `packages/editor/src/components/editors/editor-container.tsx`; deep link lúc tải page vẫn chạy một lần, bị chặn bởi `hasScrolledOnce`.
+  - **Đường đi khi bấm link trong editor:** không phải `hashchange`, cũng không phải `pushState`. Plugin `handleClickLink` (`packages/editor/src/extensions/custom-link/helpers/clickHandler.ts`) gọi `window.open(href, target)`, và mọi link mark mặc định có `target="_blank"` (`custom-link/extension.tsx`), nên link của cùng page mở ra tab mới. Handler chạy cả khi editor ở chế độ chỉ đọc (đã kiểm chứng bằng test).
+  - **Quyết định: đi theo link ngay trong tab hiện tại.** Lý do: User Story 14 yêu cầu bấm link của cùng page thì cuộn và tô sáng mà không tải lại; mở tab mới không đáp ứng. Một cú bấm chuột trái không kèm phím bổ trợ vào link có cùng origin, cùng pathname và hash khác rỗng sẽ được xử lý trong sự kiện `click` (chặn hành vi mặc định để trình duyệt không mở `target="_blank"` ở chế độ chỉ đọc) và đặt `window.location.hash`, nhờ vậy đi qua listener `hashchange`. Nếu hash trùng với hash hiện tại thì gọi thẳng `highlightLinkedBlock`, vì đặt lại cùng hash không phát `hashchange`. Mọi link khác (page khác, origin khác, link không có hash, bấm kèm ctrl/cmd/shift/alt, nút giữa) giữ nguyên hành vi cũ.
 - **Q8, block đã bị xoá:** giữ nguyên, mở page ở đầu và không báo gì.
 - **Q9, thời gian highlight:** giữ nguyên `NodeHighlightPlugin` (`packages/editor/src/plugins/highlight.ts`): highlight bị xoá khi editor nhận focus.
 - **Q10, đăng nhập:** đưa cả hash vào `next_path` (pathname + hash, encode đúng) ở các điểm redirect về login, để sau khi đăng nhập vẫn nhảy tới block.
@@ -48,7 +53,8 @@ Trong Plane Pages, người dùng muốn copy một link trỏ thẳng tới m�
 ## Verified facts
 
 - UniqueID (`packages/editor/src/extensions/unique-id/extension.ts`) gán attr `id` (render thành `data-id`) cho mọi type trong `COMBINED_BLOCK_NODE_TYPES`, gồm paragraph, heading, blockquote, code block, horizontal rule, các loại list, list item, task item, table, image, custom image, v.v.
-- `EditorContainer` đọc `window.location.href.split("#")[1]` một lần, chờ provider sync hoặc dùng cached content, tìm node bằng `doc.descendants` theo `attrs.id`, scroll `block: "center"`, và dispatch meta cho `nodeHighlightPluginKey`. Hạ tầng deep link đã có sẵn; chưa có chỗ nào tạo ra link.
+- `EditorContainer` đọc hash của URL một lần lúc tải, chờ provider sync hoặc dùng cached content, tìm node bằng `doc.descendants` theo `attrs.id`, scroll `block: "center"`, và dispatch meta cho `nodeHighlightPluginKey`. Chưa có chỗ nào tạo ra link.
+- `NodeHighlightPlugin` được định nghĩa từ commit `b53016b449` nhưng chưa từng được đăng ký vào editor, nên trước đây deep link chỉ cuộn mà không tô sáng (Lead đã kiểm chứng trên trình duyệt). Ticket 03 đăng ký plugin trong `UtilityExtension` (`packages/editor/src/extensions/utility.ts`) và giữ nguyên hành vi của plugin.
 - Block menu dùng chung cho document editor (`components/editors/document/page-renderer.tsx`) và rich-text editor (`components/editors/rich-text/editor.tsx`).
 - Package editor không có hệ thống toast; web app có.
 - `TEditorBodyHandlers` trong `editor-body.tsx` đã có `getRedirectionLink(pageId)`.
@@ -67,6 +73,7 @@ Trong Plane Pages, người dùng muốn copy một link trỏ thẳng tới m�
 ## Deferred
 
 Không có câu hỏi nào bị hoãn. Các mở rộng đã cân nhắc và loại khỏi phạm vi, sẽ được mở lại nếu có yêu cầu:
+
 - Copy link trong rich-text editor của work item: mở lại khi cần chia sẻ block trong mô tả work item; khi đó truyền handler dựng URL trang chi tiết work item.
 - Icon 🔗 khi hover heading hoặc phím tắt: mở lại nếu người dùng thấy Block menu khó tìm.
 - Thiết bị cảm ứng: mở lại khi Block menu được hỗ trợ trên touch.

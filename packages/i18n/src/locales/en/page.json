@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Content limit reached and live sync is off. Create a new page or use nested pages to continue syncing."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Link copied",
+        "message": "Block link copied to clipboard."
+      },
+      "copy_failed": {
+        "title": "Link not copied",
+        "message": "The block link could not be copied. Please try again."
+      }
+    }
   }
 }

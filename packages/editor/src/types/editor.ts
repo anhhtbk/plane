@@ -190,6 +190,13 @@ export type IRichTextEditorProps = IEditorProps & {
   dragDropEnabled?: boolean;
 };
 
+/**
+ * Called with the `id` of the block selected by the drag handle when "Copy link" is chosen in the Block menu.
+ * The integrator builds the block link, writes it to the clipboard and reports the result. "Copy link" is shown
+ * only when this handler is passed.
+ */
+export type TCopyBlockLinkHandler = (blockId: string) => void | Promise<void>;
+
 export type ICollaborativeDocumentEditorProps = Omit<IEditorProps, "initialValue" | "onEnterKeyPress" | "value"> & {
   aiHandler?: TAIHandler;
   documentLoaderClassName?: string;
@@ -199,6 +206,7 @@ export type ICollaborativeDocumentEditorProps = Omit<IEditorProps, "initialValue
   serverHandler?: TServerHandler;
   user: TUserDetails;
   extendedDocumentEditorProps?: ICollaborativeDocumentEditorPropsExtended;
+  onCopyBlockLink?: TCopyBlockLinkHandler;
   updatePageProperties?: <T extends keyof EventToPayloadMap>(
     pageIds: string | string[],
     actionType: T,
@@ -212,6 +220,7 @@ export type ICollaborativeDocumentEditorProps = Omit<IEditorProps, "initialValue
 
 export type IDocumentEditorProps = Omit<IEditorProps, "initialValue" | "onEnterKeyPress" | "value"> & {
   aiHandler?: TAIHandler;
+  onCopyBlockLink?: TCopyBlockLinkHandler;
   user?: TUserDetails;
   value: Content;
 };

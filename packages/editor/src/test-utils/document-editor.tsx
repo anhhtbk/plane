@@ -5,6 +5,7 @@
  */
 
 import type { Content, Editor } from "@tiptap/core";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import type { RenderResult } from "@testing-library/react";
@@ -53,6 +54,8 @@ type DocumentEditorHarness = RenderResult & {
   user: UserEvent;
   /** Puts a NodeSelection on the block whose `id` attribute is `blockId`. */
   selectBlock: (blockId: string) => void;
+  /** Puts a NodeSelection on the first node of type `typeName` (e.g. a node that carries no `id`). */
+  selectNodeOfType: (typeName: string) => void;
   /** Clicks the drag handle, which opens the Block menu for the current selection. */
   openBlockMenu: () => Promise<void>;
 };
@@ -76,19 +79,25 @@ export async function renderDocumentEditor({
   });
   const editor = editorDOM.editor!;
 
-  const selectBlock = (blockId: string) => {
-    let blockPos: number | null = null;
+  const selectFirstNode = (matches: (node: ProseMirrorNode) => boolean, description: string) => {
+    let nodePos: number | null = null;
     editor.state.doc.descendants((node, pos) => {
-      if (blockPos !== null) return false;
-      if (node.attrs.id === blockId) blockPos = pos;
-      return blockPos === null;
+      if (nodePos !== null) return false;
+      if (matches(node)) nodePos = pos;
+      return nodePos === null;
     });
-    if (blockPos === null) throw new Error(`No block with id "${blockId}"`);
-    const pos = blockPos;
+    if (nodePos === null) throw new Error(`No ${description}`);
+    const pos = nodePos;
     act(() => {
       editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, pos)));
     });
   };
+
+  const selectBlock = (blockId: string) =>
+    selectFirstNode((node) => node.attrs.id === blockId, `block with id "${blockId}"`);
+
+  const selectNodeOfType = (typeName: string) =>
+    selectFirstNode((node) => node.type.name === typeName, `node of type "${typeName}"`);
 
   const openBlockMenu = async () => {
     const dragHandle = result.container.querySelector<HTMLElement>("#drag-handle");
@@ -96,7 +105,7 @@ export async function renderDocumentEditor({
     await user.click(dragHandle);
   };
 
-  return { ...result, user, selectBlock, openBlockMenu };
+  return { ...result, user, selectBlock, selectNodeOfType, openBlockMenu };
 }
 
 /** The Block menu's items, by visible label. */

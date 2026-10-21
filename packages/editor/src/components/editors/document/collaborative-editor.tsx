@@ -43,6 +43,7 @@ function CollaborativeDocumentEditorInner(props: ICollaborativeDocumentEditorPro
     dragDropEnabled = true,
     isTouchDevice,
     mentionHandler,
+    onCopyBlockLink,
     onAssetChange,
     onChange,
     onEditorFocus,
@@ -128,6 +129,7 @@ function CollaborativeDocumentEditorInner(props: ICollaborativeDocumentEditorPro
           id={id}
           isLoading={isLoading}
           isTouchDevice={!!isTouchDevice}
+          onCopyBlockLink={onCopyBlockLink}
           tabIndex={tabIndex}
           provider={provider}
           state={state}

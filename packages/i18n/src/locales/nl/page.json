@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Inhoudslimiet bereikt en live-synchronisatie staat uit. Maak een nieuwe pagina aan of gebruik geneste pagina's om te blijven synchroniseren."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Koppeling gekopieerd",
+        "message": "Koppeling naar blok gekopieerd naar klembord."
+      },
+      "copy_failed": {
+        "title": "Koppeling niet gekopieerd",
+        "message": "De koppeling naar het blok kon niet worden gekopieerd. Probeer het opnieuw."
+      }
+    }
   }
 }

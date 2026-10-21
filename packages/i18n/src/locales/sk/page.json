@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Bol dosiahnutý limit obsahu a živá synchronizácia je vypnutá. Vytvorte novú stránku alebo použite vnorené stránky na pokračovanie synchronizácie."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Odkaz skopírovaný",
+        "message": "Odkaz na blok bol skopírovaný do schránky."
+      },
+      "copy_failed": {
+        "title": "Odkaz sa neskopíroval",
+        "message": "Odkaz na blok sa nepodarilo skopírovať. Skúste to znova."
+      }
+    }
   }
 }

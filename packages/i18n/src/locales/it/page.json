@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Limite di contenuto raggiunto e la sincronizzazione in tempo reale è disattivata. Crea una nuova pagina o usa pagine annidate per continuare la sincronizzazione."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Link copiato",
+        "message": "Link del blocco copiato negli appunti."
+      },
+      "copy_failed": {
+        "title": "Link non copiato",
+        "message": "Impossibile copiare il link del blocco. Riprova."
+      }
+    }
   }
 }

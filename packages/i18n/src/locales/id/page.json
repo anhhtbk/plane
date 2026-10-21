@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Batas konten tercapai dan sinkronisasi langsung nonaktif. Buat halaman baru atau gunakan halaman bertingkat untuk melanjutkan sinkronisasi."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Tautan disalin",
+        "message": "Tautan blok disalin ke clipboard."
+      },
+      "copy_failed": {
+        "title": "Tautan tidak disalin",
+        "message": "Tautan blok tidak dapat disalin. Silakan coba lagi."
+      }
+    }
   }
 }

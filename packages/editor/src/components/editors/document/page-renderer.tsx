@@ -18,6 +18,7 @@ import type {
   IEditorProps,
   IEditorPropsExtended,
   TAIHandler,
+  TCopyBlockLinkHandler,
   TDisplayConfig,
 } from "@/types";
 
@@ -36,6 +37,7 @@ type Props = {
   id: string;
   isLoading?: boolean;
   isTouchDevice: boolean;
+  onCopyBlockLink?: TCopyBlockLinkHandler;
   tabIndex?: number;
   provider?: HocuspocusProvider;
   state?: TCollabValue["state"];
@@ -54,6 +56,7 @@ export function PageRenderer(props: Props) {
     id,
     isLoading,
     isTouchDevice,
+    onCopyBlockLink,
     tabIndex,
     titleEditor,
     provider,
@@ -97,23 +100,27 @@ export function PageRenderer(props: Props) {
             state={state}
           >
             <EditorContentWrapper editor={editor} id={id} tabIndex={tabIndex} />
-            {editor.isEditable && !isTouchDevice && (
-              <div>
-                {bubbleMenuEnabled && (
-                  <EditorBubbleMenu
+            {!isTouchDevice &&
+              (editor.isEditable ? (
+                <div>
+                  {bubbleMenuEnabled && (
+                    <EditorBubbleMenu
+                      editor={editor}
+                      disabledExtensions={disabledExtensions}
+                      extendedEditorProps={extendedEditorProps}
+                      flaggedExtensions={flaggedExtensions}
+                    />
+                  )}
+                  <BlockMenu
                     editor={editor}
-                    disabledExtensions={disabledExtensions}
-                    extendedEditorProps={extendedEditorProps}
                     flaggedExtensions={flaggedExtensions}
+                    disabledExtensions={disabledExtensions}
+                    onCopyBlockLink={onCopyBlockLink}
                   />
-                )}
-                <BlockMenu
-                  editor={editor}
-                  flaggedExtensions={flaggedExtensions}
-                  disabledExtensions={disabledExtensions}
-                />
-              </div>
-            )}
+                </div>
+              ) : (
+                onCopyBlockLink && <BlockMenu editor={editor} onCopyBlockLink={onCopyBlockLink} />
+              ))}
           </EditorContainer>
         </>
       )}

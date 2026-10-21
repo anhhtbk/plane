@@ -22,7 +22,10 @@ import type {
 import { useTranslation } from "@plane/i18n";
 import type { TSearchEntityRequestPayload, TSearchResponse, TWebhookConnectionQueryParams } from "@plane/types";
 import { ERowVariant, Row } from "@plane/blocks/layout";
-import { cn, generateRandomColor, hslToHex } from "@plane/utils";
+import { setToast } from "@plane/blocks/toast";
+import { cn, copyUrlToClipboard, generateRandomColor, hslToHex } from "@plane/utils";
+// app
+import { ensureTrailingSlash } from "@/app/compat/next/helper";
 // components
 import { EditorMentionsRoot } from "@/components/editor/embeds/mentions";
 // hooks
@@ -197,6 +200,28 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
     [editorRef, workspaceId, workspaceSlug]
   );
 
+  const handleCopyBlockLink = useCallback(
+    async (blockId: string) => {
+      try {
+        // The canonical page path ends in `/`; a slashless one would be redirected without its hash.
+        await copyUrlToClipboard(`${ensureTrailingSlash(handlers.getRedirectionLink(pageId))}#${blockId}`);
+        setToast({
+          type: "success",
+          title: t("page_block_link.toasts.copied.title"),
+          message: t("page_block_link.toasts.copied.message"),
+        });
+      } catch (error) {
+        console.error("Failed to copy block link", error);
+        setToast({
+          type: "error",
+          title: t("page_block_link.toasts.copy_failed.title"),
+          message: t("page_block_link.toasts.copy_failed.message"),
+        });
+      }
+    },
+    [handlers, pageId, t]
+  );
+
   const serverHandler: TServerHandler = useMemo(
     () => ({
       onStateChange: (state) => {
@@ -303,6 +328,7 @@ export const PageEditorBody = observer(function PageEditorBody(props: Props) {
             aiHandler={{
               menu: getAIMenu,
             }}
+            onCopyBlockLink={handleCopyBlockLink}
             onAssetChange={updateAssetsList}
             extendedEditorProps={extendedEditorProps}
             isFetchingFallbackBinary={isFetchingFallbackBinary}

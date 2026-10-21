@@ -41,6 +41,8 @@ export type TEditorHookProps = TCoreHookProps &
   > & {
     editable: boolean;
     enableHistory: boolean;
+    /** Follow block links of the open page in place; only the Pages document editors enable it. */
+    followBlockLinksInPlace?: boolean;
     initialValue?: Content;
     provider?: HocuspocusProvider;
   };

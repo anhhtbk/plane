@@ -36,6 +36,12 @@ type LinkOptions = {
    */
   openOnClick: boolean;
   /**
+   * If enabled, a plain click on a block link of the open page (same origin and path, `#<block id>`)
+   * scrolls to and highlights that block in place instead of opening a new tab. Only the Pages
+   * document editors enable it; every other editor opens such links in a new tab.
+   */
+  followBlockLinksInPlace: boolean;
+  /**
    * If enabled, links will be inclusive i.e. if you move your cursor to the
    * link text, and start typing, it'll be a part of the link itself.
    */
@@ -143,6 +149,7 @@ export const CustomLinkExtension = Mark.create<LinkOptions, CustomLinkStorage>({
   addOptions() {
     return {
       openOnClick: true,
+      followBlockLinksInPlace: false,
       linkOnPaste: true,
       autolink: true,
       inclusive: false,
@@ -269,6 +276,8 @@ export const CustomLinkExtension = Mark.create<LinkOptions, CustomLinkStorage>({
     if (this.options.openOnClick) {
       plugins.push(
         clickHandler({
+          editor: this.editor,
+          followBlockLinksInPlace: this.options.followBlockLinksInPlace,
           type: this.type,
         })
       );

@@ -16,9 +16,11 @@ Fixed by rejecting any next_path starting with "//" outright, after the
 existing "must start with /" check.
 """
 
+from urllib.parse import parse_qs, urlparse
+
 import pytest
 
-from plane.utils.path_validator import validate_next_path
+from plane.utils.path_validator import get_safe_redirect_url, validate_next_path
 
 pytestmark = pytest.mark.unit
 
@@ -90,3 +92,100 @@ class TestValidateNextPathAuthorityRelative:
             f"{obfuscated_next_path!r} must be rejected — browsers strip tab/CR/LF before parsing, "
             "so this collapses to an authority-relative '///evil.com' navigation"
         )
+
+
+# A block link is a page URL plus "#<block id>"; the fragment has to survive
+# sign-in (next_path) without loosening any of the checks above.
+BLOCK_FRAGMENT = "#6f1c2d4e-9a3b-4c5d-8e7f-0a1b2c3d4e5f"
+PAGE_PATH = "/acme/projects/1f2e3d4c/pages/9a8b7c6d/"
+APP_URL = "https://app.plane.test"
+
+
+class TestValidateNextPathFragment:
+    @pytest.mark.parametrize(
+        "next_path",
+        [
+            PAGE_PATH + BLOCK_FRAGMENT,
+            PAGE_PATH + "?view=full" + BLOCK_FRAGMENT,
+            "/" + BLOCK_FRAGMENT,
+        ],
+    )
+    def test_keeps_fragment_of_relative_path(self, next_path):
+        assert validate_next_path(next_path) == next_path
+
+    @pytest.mark.parametrize(
+        "malicious_next_path",
+        [
+            # authority-relative
+            "///evil.com/" + BLOCK_FRAGMENT,
+            "////evil.com/" + BLOCK_FRAGMENT,
+            # tab/CR/LF obfuscated authority-relative
+            "/\t/\t/evil.com" + BLOCK_FRAGMENT,
+            "/\r/\r/evil.com" + BLOCK_FRAGMENT,
+            "/\n/\n/evil.com" + BLOCK_FRAGMENT,
+            # backslashes collapse to a non-rooted path
+            "\\\\evil.com" + BLOCK_FRAGMENT,
+            # not rooted
+            "evil.com/" + BLOCK_FRAGMENT,
+            # path traversal, in the path or smuggled into the fragment
+            "/acme/../../etc/passwd" + BLOCK_FRAGMENT,
+            PAGE_PATH + "#../../evil",
+            # suspicious patterns, in the path or in the fragment
+            "/javascript:alert(1)" + BLOCK_FRAGMENT,
+            PAGE_PATH + "#javascript:alert(1)",
+            "/data:text/html,x" + BLOCK_FRAGMENT,
+            "/%2e%2e/evil" + BLOCK_FRAGMENT,
+            "/%2f%2fevil.com" + BLOCK_FRAGMENT,
+            "/%5c%5cevil.com" + BLOCK_FRAGMENT,
+            PAGE_PATH + "#<script>alert(1)</script>",
+            PAGE_PATH + "#x onerror=alert(1)",
+            # over the length limit
+            "/" + "a" * 500 + BLOCK_FRAGMENT,
+        ],
+    )
+    def test_still_rejects_attacks_with_fragment(self, malicious_next_path):
+        assert validate_next_path(malicious_next_path) == ""
+
+    @pytest.mark.parametrize(
+        "absolute_next_path, expected",
+        [
+            ("https://evil.com/phish" + BLOCK_FRAGMENT, "/phish"),
+            ("http://evil.com/phish" + BLOCK_FRAGMENT, "/phish"),
+            ("//evil.com/phish" + BLOCK_FRAGMENT, "/phish"),
+        ],
+    )
+    def test_still_strips_host_from_absolute_url_with_fragment(self, absolute_next_path, expected):
+        assert validate_next_path(absolute_next_path) == expected
+
+
+class TestGetSafeRedirectUrlEncodesNextPath:
+    @pytest.fixture(autouse=True)
+    def _allowed_hosts(self, settings):
+        settings.WEB_URL = APP_URL
+        settings.APP_BASE_URL = APP_URL
+        settings.ADMIN_BASE_URL = None
+        settings.SPACE_BASE_URL = None
+
+    def test_fragment_stays_inside_next_path_value(self):
+        url = get_safe_redirect_url(base_url=APP_URL, next_path=PAGE_PATH + BLOCK_FRAGMENT)
+
+        parsed = urlparse(url)
+        assert (parsed.scheme, parsed.netloc, parsed.path) == ("https", "app.plane.test", "/")
+        assert parsed.fragment == ""
+        assert parse_qs(parsed.query) == {"next_path": [PAGE_PATH + BLOCK_FRAGMENT]}
+
+    def test_query_and_fragment_of_next_path_do_not_leak_into_redirect_params(self):
+        next_path = PAGE_PATH + "?a=1&error_code=FORGED" + BLOCK_FRAGMENT
+
+        url = get_safe_redirect_url(base_url=APP_URL, next_path=next_path, params={"error_code": "5100"})
+
+        parsed = urlparse(url)
+        assert parsed.fragment == ""
+        assert parse_qs(parsed.query) == {"next_path": [next_path], "error_code": ["5100"]}
+
+    def test_rejected_next_path_is_dropped(self):
+        url = get_safe_redirect_url(
+            base_url=APP_URL, next_path="///evil.com/" + BLOCK_FRAGMENT, params={"error_code": "5100"}
+        )
+
+        assert url == f"{APP_URL}/?error_code=5100"

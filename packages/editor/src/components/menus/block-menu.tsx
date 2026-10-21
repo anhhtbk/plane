@@ -14,15 +14,16 @@ import {
   useInteractions,
   FloatingPortal,
 } from "@floating-ui/react";
+import { NodeSelection } from "@tiptap/pm/state";
 import type { Editor } from "@tiptap/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CopyOutline, DeleteOutline } from "@makeplane/propel/icons";
+import { CopyOutline, DeleteOutline, LinkOutline } from "@makeplane/propel/icons";
 import type { ISvgIcons } from "@plane/blocks/icons";
 import { cn } from "@plane/utils";
 // constants
 import { CORE_EXTENSIONS } from "@/constants/extension";
 // types
-import type { IEditorProps } from "@/types";
+import type { IEditorProps, TCopyBlockLinkHandler } from "@/types";
 // components
 import { getNodeOptions } from "./block-menu-options";
 
@@ -30,6 +31,7 @@ type Props = {
   disabledExtensions?: IEditorProps["disabledExtensions"];
   editor: Editor;
   flaggedExtensions?: IEditorProps["flaggedExtensions"];
+  onCopyBlockLink?: TCopyBlockLinkHandler;
   workItemIdentifier?: IEditorProps["workItemIdentifier"];
 };
 export type BlockMenuOption = {
@@ -41,7 +43,8 @@ export type BlockMenuOption = {
 };
 
 export function BlockMenu(props: Props) {
-  const { editor } = props;
+  const { editor, onCopyBlockLink } = props;
+  const isReadOnly = !editor.isEditable;
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimatedIn, setIsAnimatedIn] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -147,61 +150,95 @@ export function BlockMenu(props: Props) {
     }
   }, [isOpen]);
 
-  const MENU_ITEMS: BlockMenuOption[] = [
-    {
-      icon: DeleteOutline,
-      key: "delete",
-      label: "Delete",
-      onClick: (_e) => {
-        // Execute the delete action
-        editor.chain().deleteSelection().focus().run();
-      },
-    },
-    {
-      icon: CopyOutline,
-      key: "duplicate",
-      label: "Duplicate",
-      isDisabled:
-        editor.state.selection.content().content.firstChild?.type.name === CORE_EXTENSIONS.IMAGE ||
-        editor.isActive(CORE_EXTENSIONS.CUSTOM_IMAGE),
-      onClick: (_e) => {
-        try {
-          const { state } = editor;
-          const { selection } = state;
-          const firstChild = selection.content().content.firstChild;
-          const docSize = state.doc.content.size;
+  // While the editor is read-only, the drag handle (which opens this menu) shows only if the menu has
+  // something to offer: Copy link.
+  const isReadOnlyMenuEnabled = isReadOnly && !!onCopyBlockLink;
+  useEffect(() => {
+    const sideMenuStorage = editor.storage[CORE_EXTENSIONS.SIDE_MENU];
+    if (!sideMenuStorage) return;
+    sideMenuStorage.isReadOnlyMenuEnabled = isReadOnlyMenuEnabled;
+    return () => {
+      sideMenuStorage.isReadOnlyMenuEnabled = false;
+    };
+  }, [editor, isReadOnlyMenuEnabled]);
 
-          if (!firstChild) {
-            throw new Error("No content selected or content is not duplicable.");
-          }
+  const selectedBlockId: unknown =
+    editor.state.selection instanceof NodeSelection ? editor.state.selection.node.attrs.id : undefined;
+  const copyLinkBlockId = typeof selectedBlockId === "string" && selectedBlockId !== "" ? selectedBlockId : null;
 
-          // Directly use selection.to as the insertion position
-          const insertPos = selection.to;
+  const copyLinkItems: BlockMenuOption[] =
+    onCopyBlockLink && copyLinkBlockId
+      ? [
+          {
+            icon: LinkOutline,
+            key: "copy-link",
+            label: "Copy link",
+            onClick: () => {
+              void onCopyBlockLink(copyLinkBlockId);
+            },
+          },
+        ]
+      : [];
 
-          // Ensure the insertion position is within the document's bounds
-          if (insertPos < 0 || insertPos > docSize) {
-            throw new Error("The insertion position is invalid or outside the document.");
-          }
+  // A read-only document offers no edit operation: only Copy link.
+  const MENU_ITEMS: BlockMenuOption[] = isReadOnly
+    ? copyLinkItems
+    : [
+        {
+          icon: DeleteOutline,
+          key: "delete",
+          label: "Delete",
+          onClick: (_e) => {
+            // Execute the delete action
+            editor.chain().deleteSelection().focus().run();
+          },
+        },
+        {
+          icon: CopyOutline,
+          key: "duplicate",
+          label: "Duplicate",
+          isDisabled:
+            editor.state.selection.content().content.firstChild?.type.name === CORE_EXTENSIONS.IMAGE ||
+            editor.isActive(CORE_EXTENSIONS.CUSTOM_IMAGE),
+          onClick: (_e) => {
+            try {
+              const { state } = editor;
+              const { selection } = state;
+              const firstChild = selection.content().content.firstChild;
+              const docSize = state.doc.content.size;
 
-          const contentToInsert = firstChild.toJSON();
+              if (!firstChild) {
+                throw new Error("No content selected or content is not duplicable.");
+              }
 
-          // Insert the content at the calculated position
-          editor
-            .chain()
-            .insertContentAt(insertPos, contentToInsert, {
-              updateSelection: true,
-            })
-            .focus(Math.min(insertPos + 1, docSize), { scrollIntoView: false })
-            .run();
-        } catch (error) {
-          if (error instanceof Error) {
-            console.error(error.message);
-          }
-        }
-      },
-    },
-    ...getNodeOptions(editor),
-  ];
+              // Directly use selection.to as the insertion position
+              const insertPos = selection.to;
+
+              // Ensure the insertion position is within the document's bounds
+              if (insertPos < 0 || insertPos > docSize) {
+                throw new Error("The insertion position is invalid or outside the document.");
+              }
+
+              const contentToInsert = firstChild.toJSON();
+
+              // Insert the content at the calculated position
+              editor
+                .chain()
+                .insertContentAt(insertPos, contentToInsert, {
+                  updateSelection: true,
+                })
+                .focus(Math.min(insertPos + 1, docSize), { scrollIntoView: false })
+                .run();
+            } catch (error) {
+              if (error instanceof Error) {
+                console.error(error.message);
+              }
+            }
+          },
+        },
+        ...copyLinkItems,
+        ...getNodeOptions(editor),
+      ];
 
   if (!isOpen) {
     return null;

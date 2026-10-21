@@ -8,6 +8,8 @@
 import type { AxiosInstance, AxiosRequestConfig } from "axios";
 import { create } from "axios";
 import { normalizeAPIRequestURL } from "@plane/services";
+// helpers
+import { getSignInRoute } from "@/helpers/authentication.helper";
 
 export abstract class APIService {
   protected baseURL: string;
@@ -41,14 +43,14 @@ export abstract class APIService {
       (response) => response,
       (error) => {
         if (error.response && error.response.status === 401) {
-          const currentPath = window.location.pathname;
+          const { pathname: currentPath, hash } = window.location;
           // The entry page ("/") runs its own current-user request on mount;
           // when the session is expired that request 401s too, and redirecting
           // "/" to "/?next_path=/" reloads the page in an endless loop instead of
           // letting the sign-in screen render. Only bounce away from private
           // routes.
           if (currentPath !== "/") {
-            window.location.replace(`/${currentPath ? `?next_path=${encodeURIComponent(currentPath)}` : ``}`);
+            window.location.replace(getSignInRoute(currentPath, hash));
           }
         }
         return Promise.reject(error);

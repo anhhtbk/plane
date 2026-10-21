@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Limite de contenu atteinte et la synchronisation en direct est désactivée. Créez une nouvelle page ou utilisez des pages imbriquées pour continuer la synchronisation."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Lien copié",
+        "message": "Lien du bloc copié dans le presse-papiers."
+      },
+      "copy_failed": {
+        "title": "Lien non copié",
+        "message": "Impossible de copier le lien du bloc. Veuillez réessayer."
+      }
+    }
   }
 }

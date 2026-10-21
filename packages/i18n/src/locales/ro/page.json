@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Limita de conținut a fost atinsă, iar sincronizarea live este dezactivată. Creează o pagină nouă sau folosește pagini imbricate pentru a continua sincronizarea."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Link copiat",
+        "message": "Linkul blocului a fost copiat în clipboard."
+      },
+      "copy_failed": {
+        "title": "Linkul nu a fost copiat",
+        "message": "Linkul blocului nu a putut fi copiat. Vă rugăm să încercați din nou."
+      }
+    }
   }
 }

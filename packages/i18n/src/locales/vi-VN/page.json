@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Đã đạt giới hạn nội dung và đồng bộ trực tiếp đã tắt. Tạo trang mới hoặc dùng trang lồng nhau để tiếp tục đồng bộ."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Đã sao chép liên kết",
+        "message": "Đã sao chép liên kết của khối vào bảng tạm."
+      },
+      "copy_failed": {
+        "title": "Chưa sao chép liên kết",
+        "message": "Không thể sao chép liên kết của khối. Vui lòng thử lại."
+      }
+    }
   }
 }

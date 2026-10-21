@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "콘텐츠 한도에 도달하여 실시간 동기화가 꺼졌습니다. 동기화를 계속하려면 새 페이지를 만들거나 중첩 페이지를 사용하세요."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "링크 복사됨",
+        "message": "블록 링크가 클립보드에 복사되었습니다."
+      },
+      "copy_failed": {
+        "title": "링크가 복사되지 않음",
+        "message": "블록 링크를 복사할 수 없습니다. 다시 시도해 주세요."
+      }
+    }
   }
 }

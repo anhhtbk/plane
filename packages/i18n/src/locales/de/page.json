@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "Inhaltslimit erreicht, Live-Synchronisierung ist deaktiviert. Neue Seite erstellen oder verschachtelte Seiten verwenden, um die Synchronisierung fortzusetzen."
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "Link kopiert",
+        "message": "Link zum Block in die Zwischenablage kopiert."
+      },
+      "copy_failed": {
+        "title": "Link nicht kopiert",
+        "message": "Der Link zum Block konnte nicht kopiert werden. Bitte versuchen Sie es erneut."
+      }
+    }
   }
 }

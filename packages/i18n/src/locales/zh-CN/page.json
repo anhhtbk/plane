@@ -114,5 +114,17 @@
   },
   "page_content_limit_banner": {
     "message": "已达到内容上限，实时同步已关闭。请创建新页面或使用嵌套页面以继续同步。"
+  },
+  "page_block_link": {
+    "toasts": {
+      "copied": {
+        "title": "链接已复制",
+        "message": "已将该块的链接复制到剪贴板。"
+      },
+      "copy_failed": {
+        "title": "链接未复制",
+        "message": "无法复制该块的链接，请重试。"
+      }
+    }
   }
 }

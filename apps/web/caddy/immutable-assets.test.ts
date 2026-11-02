@@ -66,7 +66,8 @@ describe("Caddy immutable provenance", () => {
         (output) => output.type === "chunk" && output.fileName !== "assets/fixed-12345678.js"
       );
       expect(hashedChunks.some((output) => output.type === "chunk" && output.isDynamicEntry)).toBe(true);
-      expect(allowed).toEqual(hashedChunks.map((output) => `/${output.fileName}`).toSorted());
+      // oxlint-disable-next-line unicorn/no-array-sort
+      expect(allowed).toEqual(hashedChunks.map((output) => `/${output.fileName}`).sort());
       if (naming === "function") {
         expect(allowed.some((file) => /-route-[^/]+[.]js$/.test(file))).toBe(true);
         expect(allowed.some((file) => /-lazy-[^/]+[.]js$/.test(file))).toBe(true);

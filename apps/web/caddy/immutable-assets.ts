@@ -57,7 +57,9 @@ export function caddyImmutableAssets(): Plugin {
       // including a file removed between the existence check and serving it.
       const snippet = [
         "# Generated from client bundle hash metadata; do not edit.",
-        "@immutable path " + paths.toSorted().join(" "),
+        // `toSorted` needs an ES2023 lib, which apps/web does not target.
+        // oxlint-disable-next-line unicorn/no-array-sort
+        "@immutable path " + paths.sort().join(" "),
         "header @immutable {",
         '\tCache-Control "public, max-age=31536000, immutable"',
         "\tmatch status 200 206 304",

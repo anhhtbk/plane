@@ -19,15 +19,31 @@ export default defineConfig({
     ],
   },
   test: {
-    // Component tests that need a DOM but not a real browser, so `pnpm test` stays runnable
-    // without browsers.
-    include: ["src/**/*.test.tsx"],
-    environment: "jsdom",
-    setupFiles: ["./vitest.setup.dom.ts"],
-    // Node 25+ ships its own `localStorage` global, which shadows jsdom's and is undefined without
-    // `--localstorage-file`; `@plane/i18n` reads it on import.
+    // Node 25+ ships its own `localStorage` global, which shadows the DOM environment's and is
+    // undefined without `--localstorage-file`; `@plane/i18n` reads it on import.
     execArgv: ["--no-experimental-webstorage"],
     // The ESM build above uses extensionless relative imports, which only Vite can resolve.
     server: { deps: { inline: ["prosemirror-codemark"] } },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["src/**/*.test.ts"],
+          environment: "happy-dom",
+        },
+      },
+      {
+        extends: true,
+        test: {
+          // Component tests that need a DOM but not a real browser, so `pnpm test` stays runnable
+          // without browsers.
+          name: "dom",
+          include: ["src/**/*.test.tsx"],
+          environment: "jsdom",
+          setupFiles: ["./vitest.setup.dom.ts"],
+        },
+      },
+    ],
   },
 });

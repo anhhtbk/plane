@@ -28,7 +28,7 @@ export function caddyImmutableAssets(): Plugin {
                 name: output.name,
                 isEntry: output.isEntry,
                 isDynamicEntry: output.isDynamicEntry,
-                facadeModuleId: output.facadeModuleId ?? undefined,
+                facadeModuleId: output.facadeModuleId,
                 moduleIds: output.moduleIds,
                 exports: output.exports,
               } satisfies Rolldown.PreRenderedChunk)
